@@ -10,10 +10,9 @@ from pipelines.airbyte_ci.connectors.context import ConnectorContext
 from pipelines.airbyte_ci.connectors.reports import ConnectorReport, Report
 from pipelines.airbyte_ci.metadata.pipeline import MetadataValidation
 from pipelines.helpers import git
+from pipelines.helpers.changelog import Changelog
 from pipelines.helpers.connectors import metadata_change_helpers
 from pipelines.models.steps import Step, StepResult, StepStatus
-from pipelines.helpers.changelog import Changelog
-import traceback
 
 if TYPE_CHECKING:
     from anyio import Semaphore
@@ -70,6 +69,7 @@ class AddChangelogEntry(Step):
             stdout=f"Added changelog entry to {doc_path}",
             output_artifact=updated_repo_dir,
         )
+
 
 class BumpDockerImageTagInMetadata(Step):
     context: ConnectorContext
