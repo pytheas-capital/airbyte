@@ -12,6 +12,8 @@ from pipelines.airbyte_ci.metadata.pipeline import MetadataValidation
 from pipelines.helpers import git
 from pipelines.helpers.connectors import metadata_change_helpers
 from pipelines.models.steps import Step, StepResult, StepStatus
+from pipelines.helpers.changelog import Changelog
+import traceback
 
 if TYPE_CHECKING:
     from anyio import Semaphore
@@ -44,21 +46,16 @@ class AddChangelogEntry(Step):
     ) -> None:
         super().__init__(context)
         self.repo_dir = repo_dir
-        self.new_version = new_version
+        self.new_version = semver.VersionInfo.parse(new_version)
         self.changelog_entry = changelog_entry
         self.pull_request_number = pull_request_number
 
     async def _run(self) -> StepResult:
         doc_path = self.context.connector.documentation_file_path
-        if not doc_path.exists():
-            return StepResult(
-                self,
-                StepStatus.SKIPPED,
-                stdout="Connector does not have a documentation file.",
-                output_artifact=self.repo_dir,
-            )
         try:
-            updated_doc = self.add_changelog_entry(doc_path.read_text())
+            changelog = Changelog(doc_path)
+            changelog.add_entry(self.new_version, datetime.date.today(), self.pull_request_number, self.changelog_entry)
+            updated_doc = changelog.to_markdown()
         except Exception as e:
             return StepResult(
                 self,
@@ -73,22 +70,6 @@ class AddChangelogEntry(Step):
             stdout=f"Added changelog entry to {doc_path}",
             output_artifact=updated_repo_dir,
         )
-
-    def find_line_index_for_new_entry(self, markdown_text: str) -> int:
-        lines = markdown_text.splitlines()
-        for line_index, line in enumerate(lines):
-            if "version" in line.lower() and "date" in line.lower() and "pull request" in line.lower() and "subject" in line.lower():
-                return line_index + 2
-        raise Exception("Could not find the changelog section table in the documentation file.")
-
-    def add_changelog_entry(self, og_doc_content: str) -> str:
-        today = datetime.date.today().strftime("%Y-%m-%d")
-        lines = og_doc_content.splitlines()
-        line_index_for_new_entry = self.find_line_index_for_new_entry(og_doc_content)
-        new_entry = f"| {self.new_version} | {today} | [{self.pull_request_number}](https://github.com/airbytehq/airbyte/pull/{self.pull_request_number}) | {self.changelog_entry} |"
-        lines.insert(line_index_for_new_entry, new_entry)
-        return "\n".join(lines) + "\n"
-
 
 class BumpDockerImageTagInMetadata(Step):
     context: ConnectorContext
