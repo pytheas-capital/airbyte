@@ -36,7 +36,7 @@ from orchestrator.resources.github import (
     github_connectors_metadata_files,
     github_workflow_runs,
 )
-from orchestrator.sensors.gcs import new_gcs_blobs_sensor
+from orchestrator.sensors.gcs import new_gcs_blobs_sensor, new_gcs_blobs_partition_sensor
 from orchestrator.sensors.registry import registry_updated_sensor
 
 ASSETS = load_assets_from_modules(
@@ -163,6 +163,13 @@ SENSORS = [
         resources_def=CONNECTOR_TEST_REPORT_SENSOR_RESOURCE_TREE,
         gcs_blobs_resource_key="latest_nightly_complete_file_blobs",
         interval=(1 * 60 * 60),
+    ),
+    new_gcs_blobs_partition_sensor(
+        job=generate_registry_entry,
+        resources_def=METADATA_RESOURCE_TREE,
+        partitions_def=registry_entry.metadata_partitions_def,
+        gcs_blobs_resource_key="all_metadata_file_blobs",
+        interval=60,
     ),
 ]
 
