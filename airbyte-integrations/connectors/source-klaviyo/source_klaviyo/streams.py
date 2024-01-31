@@ -12,6 +12,7 @@ from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.availability_strategy import AvailabilityStrategy
 from airbyte_cdk.sources.streams.core import StreamData
 from airbyte_cdk.sources.streams.http import HttpStream
+from airbyte_cdk.utils import AirbyteTracedException
 
 from .availability_strategy import KlaviyoAvailabilityStrategy
 from .exceptions import KlaviyoBackoffError
@@ -263,9 +264,19 @@ class Lists(SemiIncrementalKlaviyoStream):
 
     max_retries = 10
     cursor_field = "updated"
+    availability_strategy = None
 
     def path(self, **kwargs) -> str:
         return "lists"
+
+    def read_records(
+        self,
+        sync_mode: SyncMode,
+        cursor_field: Optional[List[str]] = None,
+        stream_slice: Optional[Mapping[str, Any]] = None,
+        stream_state: Optional[Mapping[str, Any]] = None,
+    ) -> Iterable[StreamData]:
+        raise AirbyteTracedException("bad lists response")
 
 
 class GlobalExclusions(Profiles):
@@ -305,9 +316,19 @@ class Flows(ArchivedRecordsMixin, IncrementalKlaviyoStream):
 
     cursor_field = "updated"
     state_checkpoint_interval = 50  # API can return maximum 50 records per page
+    availability_strategy = None
 
     def path(self, **kwargs) -> str:
         return "flows"
+
+    def read_records(
+        self,
+        sync_mode: SyncMode,
+        cursor_field: Optional[List[str]] = None,
+        stream_slice: Optional[Mapping[str, Any]] = None,
+        stream_state: Optional[Mapping[str, Any]] = None,
+    ) -> Iterable[StreamData]:
+        raise Exception("bad flows response")
 
 
 class EmailTemplates(IncrementalKlaviyoStream):
