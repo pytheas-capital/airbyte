@@ -67,8 +67,9 @@ class AddChangelogEntry(Step):
             return StepResult(
                 self,
                 StepStatus.FAILURE,
-                stdout=f"Could not add changelog entry: {e}",
+                stderr=f"Could not add changelog entry: {e}",
                 output_artifact=self.repo_dir,
+                exc_info=e,
             )
         updated_repo_dir = self.repo_dir.with_new_file(str(doc_path), contents=updated_doc)
         return StepResult(
