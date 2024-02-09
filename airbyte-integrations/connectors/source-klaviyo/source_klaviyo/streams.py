@@ -268,6 +268,17 @@ class Lists(SemiIncrementalKlaviyoStream):
         return "lists"
 
 
+class BadLists(SemiIncrementalKlaviyoStream):
+    """Docs: https://developers.klaviyo.com/en/reference/get_lists"""
+
+    max_retries = 10
+    cursor_field = "updated"
+    availability_strategy = None
+
+    def path(self, **kwargs) -> str:
+        return "listeroo"
+
+
 class GlobalExclusions(Profiles):
     """
     Docs: https://developers.klaviyo.com/en/v2023-02-22/reference/get_profiles

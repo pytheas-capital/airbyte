@@ -106,6 +106,7 @@ class AbstractSource(Source, ABC):
 
         stream_name_to_exception: MutableMapping[str, AirbyteTracedException] = {}
 
+
         with create_timer(self.name) as timer:
             for configured_stream in catalog.streams:
                 stream_instance = stream_instances.get(configured_stream.stream.name)
@@ -138,7 +139,7 @@ class AbstractSource(Source, ABC):
                     logger.exception(f"Encountered an exception while reading stream {configured_stream.stream.name}")
                     logger.info(f"Marking stream {configured_stream.stream.name} as STOPPED")
                     yield stream_status_as_airbyte_message(configured_stream.stream, AirbyteStreamStatus.INCOMPLETE)
-                    yield e.as_sanitized_airbyte_message(stream_descriptor=StreamDescriptor(name=configured_stream.stream.name))
+                    # yield e.as_sanitized_airbyte_message(stream_descriptor=StreamDescriptor(name=configured_stream.stream.name))
                     stream_name_to_exception[stream_instance.name] = e
                     if self.stop_sync_on_stream_failure:
                         logger.info(
@@ -155,9 +156,9 @@ class AbstractSource(Source, ABC):
                         traced_exception = AirbyteTracedException.from_exception(e, message=display_message)
                     else:
                         traced_exception = AirbyteTracedException.from_exception(e)
-                    yield traced_exception.as_sanitized_airbyte_message(
-                        stream_descriptor=StreamDescriptor(name=configured_stream.stream.name)
-                    )
+                    # yield traced_exception.as_sanitized_airbyte_message(
+                    #     stream_descriptor=StreamDescriptor(name=configured_stream.stream.name)
+                    # )
                     stream_name_to_exception[stream_instance.name] = traced_exception
                     if self.stop_sync_on_stream_failure:
                         logger.info(f"{self.name} does not support continuing syncs on error from stream {configured_stream.stream.name}")
@@ -168,6 +169,9 @@ class AbstractSource(Source, ABC):
                     logger.info(timer.report())
 
         if len(stream_name_to_exception) > 0:
+            # Testing just to see if emitting all the error messages at the very end changes the destination commit behavior
+            for stream_name, exception in stream_name_to_exception.items():
+                yield exception.as_sanitized_airbyte_message(stream_descriptor=StreamDescriptor(name=stream_name))
             error_message = self._generate_failed_streams_error_message(stream_name_to_exception)
             logger.info(error_message)
             # We still raise at least one exception when a stream raises an exception because the platform
