@@ -105,7 +105,7 @@ public class MssqlCdcTargetPosition implements CdcTargetPosition<Lsn> {
         LOGGER.info("identified target lsn: " + maxLsn);
         return new MssqlCdcTargetPosition(maxLsn);
       } else {
-        throw new RuntimeException("SQL returned max LSN as null, this might be because the SQL Server Agent is not running. " +
+        throw new RuntimeException("SQL returned max LSN as null on database " + dbName + ", this might be because the SQL Server Agent is not running. " +
             "Please enable the Agent and try again (https://docs.microsoft.com/en-us/sql/ssms/agent/start-stop-or-pause-the-sql-server-agent-service)");
       }
     } catch (final SQLException | IOException e) {

@@ -103,8 +103,7 @@ class ConnectorReport(Report):
         local_icon_path = Path(f"{self.pipeline_context.connector.code_directory}/icon.svg").resolve()
         step_result_to_artifact_link = {}
         for step_result in self.steps_results:
-            test_artifacts_link = await self.get_path_as_link(step_result.test_artifacts_path)
-            if test_artifacts_link:
+            if test_artifacts_link := await self.upload_path(step_result.test_artifacts_path):
                 step_result_to_artifact_link[step_result.step.title] = test_artifacts_link
         template_context = {
             "connector_name": self.pipeline_context.connector.technical_name,
@@ -171,7 +170,7 @@ class ConnectorReport(Report):
         main_panel = Panel(Group(*to_render), title=main_panel_title, subtitle=duration_subtitle)
         console.print(main_panel)
 
-    async def get_path_as_link(self, path: Optional[Path]) -> Optional[str]:
+    async def upload_path(self, path: Optional[Path]) -> Optional[str]:
         if not path or not path.exists():
             return None
         if self.pipeline_context.is_local:

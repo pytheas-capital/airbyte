@@ -213,7 +213,7 @@ abstract public class JdbcSourceAcceptanceTest<S extends Source, T extends TestD
     final ConnectorSpecification expected = Jsons.deserialize(resourceString, ConnectorSpecification.class);
 
     assertEquals(expected, actual);
-  }
+      }
 
   @Test
   void testCheckSuccess() throws Exception {

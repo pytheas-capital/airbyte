@@ -640,6 +640,7 @@ E.G.: running Poe tasks on the modified internal packages of the current branch:
 
 | Version | PR                                                         | Description                                                                                                                |
 | ------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 4.3.0   | [#35317](https://github.com/airbytehq/airbyte/pull/35317)  | Augment java connector reports to include full logs and junit test results                                                 |
 | 4.2.2   | [#35364](https://github.com/airbytehq/airbyte/pull/35364)  | Fix connector tests following gradle changes in #35307.                                                                    |
 | 4.2.1   | [#35204](https://github.com/airbytehq/airbyte/pull/35204)  | Run `poetry check` before `poetry install` on poetry package install.                                                      |
 | 4.2.0   | [#35103](https://github.com/airbytehq/airbyte/pull/35103)  | Java 21 support.                                                                                                           |

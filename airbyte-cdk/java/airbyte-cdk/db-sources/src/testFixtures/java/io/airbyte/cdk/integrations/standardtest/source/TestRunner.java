@@ -18,6 +18,7 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 public class TestRunner {
 
   public static void runTestClass(final Class<?> testClass) {
+    throw new RuntimeException("SGX");/*
     final LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
         .selectors(selectClass(testClass))
         .build();
@@ -38,7 +39,7 @@ public class TestRunner {
           "There are failing tests. See https://docs.airbyte.io/contributing-to-airbyte/building-new-connector/standard-source-tests " +
               "for more information about the standard source test suite.");
       System.exit(1);
-    }
+    }*/
   }
 
 }
