@@ -250,11 +250,7 @@ public abstract class AbstractJdbcDestination extends JdbcConnector implements D
 
   protected abstract JdbcSqlGenerator getSqlGenerator();
 
-  protected JdbcDestinationHandler getDestinationHandler(final String databaseName, final JdbcDatabase database) {
-    // Pick a random dialect. Most destinations should override this anyway.
-    // TODO ... why can't we just make this method abstract?
-    return new JdbcDestinationHandler(databaseName, database, SQLDialect.POSTGRES);
-  }
+  protected abstract JdbcDestinationHandler getDestinationHandler(final String databaseName, final JdbcDatabase database);
 
   /**
    * "database" key at root of the config json, for any other variants in config, override this
