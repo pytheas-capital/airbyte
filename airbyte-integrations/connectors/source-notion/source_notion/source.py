@@ -14,7 +14,7 @@ from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http.requests_native_auth import TokenAuthenticator
 from pendulum.parsing.exceptions import ParserError
 
-from .streams import Blocks, Comments, Databases, Pages, Users
+from .streams import BadPages, Blocks, Comments, Databases, Pages, Users
 
 
 class SourceNotion(AbstractSource):
@@ -92,7 +92,8 @@ class SourceNotion(AbstractSource):
         authenticator = self._get_authenticator(config)
         args = {"authenticator": authenticator, "config": config}
         pages = Pages(**args)
+        bad_pages = BadPages(**args)
         blocks = Blocks(parent=pages, **args)
         comments = Comments(parent=pages, **args)
 
-        return [Users(**args), Databases(**args), pages, blocks, comments]
+        return [Users(**args), Databases(**args), pages, bad_pages, blocks, comments]

@@ -48,7 +48,7 @@
       "cursor_field": ["lastModified"],
       "destination_sync_mode": "append"
     },
-        {
+    {
       "stream": {
         "name": "bad_campaigns",
         "json_schema": {},

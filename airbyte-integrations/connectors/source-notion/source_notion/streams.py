@@ -275,6 +275,21 @@ class Pages(IncrementalNotionStream):
         super().__init__(obj_type="page", **kwargs)
 
 
+class BadPages(IncrementalNotionStream):
+    """
+    Docs: https://developers.notion.com/reference/post-search
+    """
+
+    state_checkpoint_interval = 100
+    availability_strategy = None
+
+    def __init__(self, **kwargs):
+        super().__init__(obj_type="page", **kwargs)
+
+    def path(self, **kwargs) -> str:
+        return "noperoo"
+
+
 class Blocks(HttpSubStream, IncrementalNotionStream):
     """
     Docs: https://developers.notion.com/reference/get-block-children
