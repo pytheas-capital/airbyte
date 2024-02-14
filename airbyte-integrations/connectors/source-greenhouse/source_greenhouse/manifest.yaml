@@ -92,7 +92,7 @@ definitions:
     $ref: "#/definitions/base_incremental_stream"
     $parameters:
       name: "bad_candidates"
-      path: "candidates/nononono"
+      path: "candidates/nononono_2"
   close_reasons_stream:
     $ref: "#/definitions/base_stream"
     $parameters:
