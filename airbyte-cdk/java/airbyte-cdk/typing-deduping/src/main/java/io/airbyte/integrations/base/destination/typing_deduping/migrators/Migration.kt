@@ -35,5 +35,14 @@ interface Migration<State> {
      */
     fun migrateIfNecessary(state: State, stream: StreamConfig): MigrationResult<State>
 
-    data class MigrationResult<State>(val updatedState: State, val softReset: Boolean)
+    data class MigrationResult<State>(val updatedState: State, val softReset: Boolean) {
+        companion object {
+            /**
+             * If a migration detects no need to migrate, it should return this.
+             */
+            fun <State> noop(updatedState: State): MigrationResult<State> {
+                return MigrationResult(updatedState, false)
+            }
+        }
+    }
 }
