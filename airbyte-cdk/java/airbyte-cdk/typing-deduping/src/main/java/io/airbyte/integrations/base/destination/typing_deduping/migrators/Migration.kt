@@ -4,10 +4,8 @@ import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
 
 /**
  * Migrations may do two things:
- * <ol>
- *   <li>Modify the raw table</li>
- *   <li>Trigger a soft reset</li>
- * </ol>
+ * 1. Modify the raw table
+ * 2. Trigger a soft reset
  *
  * The raw table modification should happen in {@link #migrateIfNecessary(Object, StreamConfig)}. However,
  * if multiple migrations want to trigger a soft reset, we should only trigger a single soft reset,
@@ -25,7 +23,7 @@ interface Migration<State> {
 
     /**
      * Perform the migration if it's necessary. This typically looks like:
-     * <pre>
+     * ```
      * // Check the state blob
      * if (requireMigration(state)) {
      *   // Check the database, in case a previous migration ran, but failed to update the state
@@ -33,7 +31,7 @@ interface Migration<State> {
      *     migrate();
      *   }
      * }
-    </pre> *
+     * ```
      */
     fun migrateIfNecessary(state: State, stream: StreamConfig): MigrationResult<State>
 
