@@ -287,7 +287,7 @@ class BadPages(IncrementalNotionStream):
         super().__init__(obj_type="page", **kwargs)
 
     def path(self, **kwargs) -> str:
-        return "noperoo"
+        return "noperoo_again"
 
 
 class Blocks(HttpSubStream, IncrementalNotionStream):
