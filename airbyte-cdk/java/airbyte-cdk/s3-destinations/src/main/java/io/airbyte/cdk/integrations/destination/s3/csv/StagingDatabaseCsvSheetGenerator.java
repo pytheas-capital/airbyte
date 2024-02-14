@@ -62,14 +62,15 @@ public class StagingDatabaseCsvSheetGenerator implements CsvSheetGenerator {
     if (useDestinationsV2Columns) {
       return List.of(
           id,
-          Timestamp.from(Instant.ofEpochMilli(emittedAt)),
+          // TODO check that this is safe to apply to ALL destinations
+          Instant.ofEpochMilli(emittedAt),
           "",
           formattedString);
     } else {
       return List.of(
           id,
           formattedString,
-          Timestamp.from(Instant.ofEpochMilli(emittedAt)));
+          Instant.ofEpochMilli(emittedAt));
     }
   }
 
