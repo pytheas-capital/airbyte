@@ -306,6 +306,44 @@ class Campaigns(LinkedInAdsStreamSlicing):
         return urlencode(params, safe="():,%")
 
 
+class BadCampaigns(LinkedInAdsStreamSlicing):
+    """
+    Get Campaigns data using `account_id` slicing.
+    More info about LinkedIn Ads / Campaigns:
+    https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/account-structure/create-and-manage-campaigns?tabs=http&view=li-lms-2023-05#search-for-campaigns
+    """
+
+    endpoint = "adCampaigns"
+    use_cache = True
+    availability_strategy = None
+
+    def path(
+        self,
+        *,
+        stream_state: Mapping[str, Any] = None,
+        stream_slice: Mapping[str, Any] = None,
+        next_page_token: Mapping[str, Any] = None,
+    ) -> str:
+        return f"{self.parent_stream.endpoint}/{stream_slice.get('account_id')}/nope_nope_nope"
+
+    def request_headers(
+        self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
+    ) -> Mapping[str, Any]:
+        headers = super().request_headers(stream_state, stream_slice, next_page_token)
+        return headers | {"X-Restli-Protocol-Version": "2.0.0"}
+
+    def request_params(
+        self,
+        stream_state: Mapping[str, Any],
+        stream_slice: Mapping[str, Any] = None,
+        next_page_token: Mapping[str, Any] = None,
+    ) -> MutableMapping[str, Any]:
+        params = super().request_params(stream_state, stream_slice, next_page_token)
+        params["search"] = "(status:(values:List(ACTIVE,PAUSED,ARCHIVED,COMPLETED,CANCELED,DRAFT,PENDING_DELETION,REMOVED)))"
+        #
+        return urlencode(params, safe="():,%")
+
+
 class Creatives(LinkedInAdsStreamSlicing):
     """
     Get Creatives data using `campaign_id` slicing.
