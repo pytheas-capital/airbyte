@@ -7,9 +7,7 @@ import io.airbyte.commons.json.Jsons
 import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
 import io.airbyte.integrations.base.destination.typing_deduping.migrators.Migration
 
-class ExtractedAtUtcTimezoneMigration(
-    private val database: JdbcDatabase
-) : Migration<SnowflakeState> {
+class ExtractedAtUtcTimezoneMigration(private val database: JdbcDatabase) : Migration<SnowflakeState> {
 
     override fun migrateIfNecessary(state: SnowflakeState, stream: StreamConfig): Migration.MigrationResult<SnowflakeState> {
         if (state.extractedAtUpdatedToUtcTimezone == true) {
