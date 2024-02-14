@@ -324,7 +324,7 @@ class BadCampaigns(LinkedInAdsStreamSlicing):
         stream_slice: Mapping[str, Any] = None,
         next_page_token: Mapping[str, Any] = None,
     ) -> str:
-        return f"{self.parent_stream.endpoint}/{stream_slice.get('account_id')}/nope_nope_nope"
+        return f"{self.parent_stream.endpoint}/{stream_slice.get('account_id')}/triggers_error"
 
     def request_headers(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
