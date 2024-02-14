@@ -32,17 +32,15 @@ class ExtractedAtUtcTimezoneMigration(
                         .put("tzm", rs.getInt("tzm"))
                 }
         ).first()
-        if (rawRecordTimezone == null) {
-            // There are no raw records. No migration necessary.
-            return Migration.MigrationResult.noop(state)
-        }
-        if (rawRecordTimezone.get("tzh").intValue() == 0 && rawRecordTimezone.get("tzm").intValue() == 0) {
-            // The raw records are already in UTC. No migration necessary.
-            return Migration.MigrationResult.noop(state)
+        if (rawRecordTimezone == null
+                || (rawRecordTimezone.get("tzh").intValue() == 0 && rawRecordTimezone.get("tzm").intValue() == 0)) {
+            // There are no raw records, or the raw records are already in UTC. No migration necessary. Update the state.
+            return Migration.MigrationResult(state.copy(extractedAtUpdatedToUtcTimezone = true), false)
         }
 
         // TODO execute sql query to update the timezone of the extracted_at column
 
+        // We've executed the migration. Update the state and trigger a soft reset.
         return Migration.MigrationResult(state.copy(extractedAtUpdatedToUtcTimezone = true), true)
     }
 }
