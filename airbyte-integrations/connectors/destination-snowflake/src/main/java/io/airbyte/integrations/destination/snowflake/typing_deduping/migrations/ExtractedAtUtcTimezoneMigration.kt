@@ -20,12 +20,12 @@ class ExtractedAtUtcTimezoneMigration(
                 { connection ->
                     // TODO write an actual sql query
                     connection.prepareStatement("""
-                    select
-                      extract(timezone_hour from "_airbyte_extracted_at") as tzh,
-                      extract(timezone_minute from "_airbyte_extracted_at") as tzm
-                    FROM "airbyte_internal"."whatever"
-                    LIMIT 1
-                """.trimIndent())
+                        select
+                          extract(timezone_hour from "_airbyte_extracted_at") as tzh,
+                          extract(timezone_minute from "_airbyte_extracted_at") as tzm
+                        FROM "airbyte_internal"."whatever"
+                        LIMIT 1
+                    """.trimIndent())
                 },
                 { rs -> (Jsons.emptyObject() as ObjectNode)
                         .put("tzh", rs.getInt("tzh"))
