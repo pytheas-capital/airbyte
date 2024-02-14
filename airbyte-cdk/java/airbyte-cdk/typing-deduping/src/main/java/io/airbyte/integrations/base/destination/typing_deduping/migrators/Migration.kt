@@ -1,6 +1,6 @@
-package io.airbyte.integrations.base.destination.typing_deduping.migrators;
+package io.airbyte.integrations.base.destination.typing_deduping.migrators
 
-import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig;
+import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
 
 /**
  * Migrations may do two things:
@@ -21,21 +21,21 @@ import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig;
  * OOMKill). Therefore, if the state blob indicates that a migration is necessary, migrations must still
  * confirm against the database that the migration is necessary.
  */
-public interface Migration<State> {
+interface Migration<State> {
 
-  /**
-   * Perform the migration if it's necessary. This typically looks like:
-   * <pre>
-   * // Check the state blob
-   * if (requireMigration(state)) {
-   *   // Check the database, in case a previous migration ran, but failed to update the state
-   *   if (requireMigration(database)) {
-   *     migrate();
-   *   }
-   * }
-   * </pre>
-   */
-  MigrationResult<State> migrateIfNecessary(State state, StreamConfig stream) throws Exception;
+    /**
+     * Perform the migration if it's necessary. This typically looks like:
+     * <pre>
+     * // Check the state blob
+     * if (requireMigration(state)) {
+     *   // Check the database, in case a previous migration ran, but failed to update the state
+     *   if (requireMigration(database)) {
+     *     migrate();
+     *   }
+     * }
+    </pre> *
+     */
+    fun migrateIfNecessary(state: State, stream: StreamConfig): MigrationResult<State>
 
-  record MigrationResult<State>(State updatedState, boolean softReset) {}
+    data class MigrationResult<State>(val updatedState: State, val softReset: Boolean)
 }
