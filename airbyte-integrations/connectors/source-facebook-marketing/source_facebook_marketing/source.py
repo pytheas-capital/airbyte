@@ -81,7 +81,9 @@ class SourceFacebookMarketing(AbstractSource):
 
         return config
 
-    def check_connection(self, logger: logging.Logger, config: Mapping[str, Any]) -> Tuple[bool, Optional[Any]]:
+    def check_connection(
+        self, logger: logging.Logger, config: Mapping[str, Any]
+    ) -> Tuple[bool, Optional[Any]]:
         """Connection check to validate that the user-provided config can be used to connect to the underlying API
 
         :param logger: source logger
@@ -100,9 +102,13 @@ class SourceFacebookMarketing(AbstractSource):
 
             for account_id in config.account_ids:
                 # Get Ad Account to check creds
-                logger.info(f"Attempting to retrieve information for account with ID: {account_id}")
+                logger.info(
+                    f"Attempting to retrieve information for account with ID: {account_id}"
+                )
                 ad_account = api.get_account(account_id=account_id)
-                logger.info(f"Successfully retrieved account information for account: {ad_account}")
+                logger.info(
+                    f"Successfully retrieved account information for account: {ad_account}"
+                )
 
                 # make sure that we have valid combination of "action_breakdowns" and "breakdowns" parameters
                 for stream in self.get_custom_insights_streams(api, config):
@@ -175,17 +181,23 @@ class SourceFacebookMarketing(AbstractSource):
             AdsInsightsPlatformAndDevice(page_size=config.page_size, **insights_args),
             AdsInsightsActionType(page_size=config.page_size, **insights_args),
             AdsInsightsActionCarouselCard(page_size=config.page_size, **insights_args),
-            AdsInsightsActionConversionDevice(page_size=config.page_size, **insights_args),
+            AdsInsightsActionConversionDevice(
+                page_size=config.page_size, **insights_args
+            ),
             AdsInsightsActionProductID(page_size=config.page_size, **insights_args),
             AdsInsightsActionReaction(page_size=config.page_size, **insights_args),
             AdsInsightsActionVideoSound(page_size=config.page_size, **insights_args),
             AdsInsightsActionVideoType(page_size=config.page_size, **insights_args),
             AdsInsightsDeliveryDevice(page_size=config.page_size, **insights_args),
             AdsInsightsDeliveryPlatform(page_size=config.page_size, **insights_args),
-            AdsInsightsDeliveryPlatformAndDevicePlatform(page_size=config.page_size, **insights_args),
+            AdsInsightsDeliveryPlatformAndDevicePlatform(
+                page_size=config.page_size, **insights_args
+            ),
             AdsInsightsDemographicsAge(page_size=config.page_size, **insights_args),
             AdsInsightsDemographicsCountry(page_size=config.page_size, **insights_args),
-            AdsInsightsDemographicsDMARegion(page_size=config.page_size, **insights_args),
+            AdsInsightsDemographicsDMARegion(
+                page_size=config.page_size, **insights_args
+            ),
             AdsInsightsDemographicsGender(page_size=config.page_size, **insights_args),
             Campaigns(
                 api=api,
@@ -255,21 +267,32 @@ class SourceFacebookMarketing(AbstractSource):
                     },
                     complete_oauth_server_input_specification={
                         "type": "object",
-                        "properties": {"client_id": {"type": "string"}, "client_secret": {"type": "string"}},
+                        "properties": {
+                            "client_id": {"type": "string"},
+                            "client_secret": {"type": "string"},
+                        },
                     },
                     complete_oauth_server_output_specification={
                         "type": "object",
                         "additionalProperties": True,
                         "properties": {
-                            "client_id": {"type": "string", "path_in_connector_config": ["client_id"]},
-                            "client_secret": {"type": "string", "path_in_connector_config": ["client_secret"]},
+                            "client_id": {
+                                "type": "string",
+                                "path_in_connector_config": ["client_id"],
+                            },
+                            "client_secret": {
+                                "type": "string",
+                                "path_in_connector_config": ["client_secret"],
+                            },
                         },
                     },
                 ),
             ),
         )
 
-    def get_custom_insights_streams(self, api: API, config: ConnectorConfig) -> List[Type[Stream]]:
+    def get_custom_insights_streams(
+        self, api: API, config: ConnectorConfig
+    ) -> List[Type[Stream]]:
         """return custom insights streams"""
         streams = []
         for insight in config.custom_insights or []:
@@ -294,10 +317,14 @@ class SourceFacebookMarketing(AbstractSource):
                 action_breakdowns_allow_empty=config.action_breakdowns_allow_empty,
                 action_report_time=insight.action_report_time,
                 time_increment=insight.time_increment,
-                start_date=insight.start_date or config.start_date or pendulum.now().add(years=-2),
+                start_date=insight.start_date
+                or config.start_date
+                or pendulum.now().add(years=-2),
                 end_date=insight.end_date or config.end_date,
-                insights_lookback_window=insight.insights_lookback_window or config.insights_lookback_window,
-                insights_job_timeout=insight.insights_job_timeout or config.insights_job_timeout,
+                insights_lookback_window=insight.insights_lookback_window
+                or config.insights_lookback_window,
+                insights_job_timeout=insight.insights_job_timeout
+                or config.insights_job_timeout,
                 level=insight.level,
             )
             streams.append(stream)

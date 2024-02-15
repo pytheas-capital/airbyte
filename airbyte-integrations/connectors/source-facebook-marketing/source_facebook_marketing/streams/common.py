@@ -15,7 +15,20 @@ from facebook_business.exceptions import FacebookRequestError
 
 # The Facebook API error codes indicating rate-limiting are listed at
 # https://developers.facebook.com/docs/graph-api/overview/rate-limiting/
-FACEBOOK_RATE_LIMIT_ERROR_CODES = (4, 17, 32, 613, 80000, 80001, 80002, 80003, 80004, 80005, 80006, 80008)
+FACEBOOK_RATE_LIMIT_ERROR_CODES = (
+    4,
+    17,
+    32,
+    613,
+    80000,
+    80001,
+    80002,
+    80003,
+    80004,
+    80005,
+    80006,
+    80008,
+)
 FACEBOOK_TEMPORARY_OAUTH_ERROR_CODE = 2
 FACEBOOK_BATCH_ERROR_CODE = 960
 FACEBOOK_UNKNOWN_ERROR_CODE = 99
@@ -37,7 +50,9 @@ def retry_pattern(backoff_type, exception, **wait_gen_kwargs):
     def log_retry_attempt(details):
         _, exc, _ = sys.exc_info()
         logger.info(str(exc))
-        logger.info(f"Caught retryable error after {details['tries']} tries. Waiting {details['wait']} more seconds then retrying...")
+        logger.info(
+            f"Caught retryable error after {details['tries']} tries. Waiting {details['wait']} more seconds then retrying..."
+        )
 
     def reduce_request_record_limit(details):
         _, exc, _ = sys.exc_info()
@@ -53,7 +68,9 @@ def retry_pattern(backoff_type, exception, **wait_gen_kwargs):
             and exc.api_error_message() in error_patterns
         ):
             # reduce the existing request `limit` param by a half and retry
-            details["kwargs"]["params"]["limit"] = int(int(details["kwargs"]["params"]["limit"]) / 2)
+            details["kwargs"]["params"]["limit"] = int(
+                int(details["kwargs"]["params"]["limit"]) / 2
+            )
             # set the flag to the api class that the last api call failed
             details.get("args")[0].last_api_call_is_successfull = False
             # set the flag to the api class that the `limit` param was reduced
@@ -73,11 +90,20 @@ def retry_pattern(backoff_type, exception, **wait_gen_kwargs):
 
     def should_retry_api_error(exc):
         if isinstance(exc, FacebookRequestError):
-            call_rate_limit_error = exc.api_error_code() in FACEBOOK_RATE_LIMIT_ERROR_CODES
-            temporary_oauth_error = exc.api_error_code() == FACEBOOK_TEMPORARY_OAUTH_ERROR_CODE
-            batch_timeout_error = exc.http_status() == http.client.BAD_REQUEST and exc.api_error_code() == FACEBOOK_BATCH_ERROR_CODE
+            call_rate_limit_error = (
+                exc.api_error_code() in FACEBOOK_RATE_LIMIT_ERROR_CODES
+            )
+            temporary_oauth_error = (
+                exc.api_error_code() == FACEBOOK_TEMPORARY_OAUTH_ERROR_CODE
+            )
+            batch_timeout_error = (
+                exc.http_status() == http.client.BAD_REQUEST
+                and exc.api_error_code() == FACEBOOK_BATCH_ERROR_CODE
+            )
             unknown_error = exc.api_error_subcode() == FACEBOOK_UNKNOWN_ERROR_CODE
-            connection_reset_error = exc.api_error_code() == FACEBOOK_CONNECTION_RESET_ERROR_CODE
+            connection_reset_error = (
+                exc.api_error_code() == FACEBOOK_CONNECTION_RESET_ERROR_CODE
+            )
             server_error = exc.http_status() == http.client.INTERNAL_SERVER_ERROR
             return any(
                 (
@@ -144,7 +170,9 @@ def traced_exception(fb_exception: FacebookRequestError):
             "with all required permissions."
         )
 
-    elif "An unknown error occurred" in msg and "error_user_title" in fb_exception._error:
+    elif (
+        "An unknown error occurred" in msg and "error_user_title" in fb_exception._error
+    ):
         msg = fb_exception._error["error_user_title"]
         if "profile is not linked to delegate page" in msg or "el perfil no est" in msg:
             failure_type = FailureType.config_error
@@ -158,4 +186,9 @@ def traced_exception(fb_exception: FacebookRequestError):
         failure_type = FailureType.system_error
         friendly_msg = f"Error: {fb_exception.api_error_code()}, {fb_exception.api_error_message()}."
 
-    return AirbyteTracedException(message=friendly_msg or msg, internal_message=msg, failure_type=failure_type, exception=fb_exception)
+    return AirbyteTracedException(
+        message=friendly_msg or msg,
+        internal_message=msg,
+        failure_type=failure_type,
+        exception=fb_exception,
+    )

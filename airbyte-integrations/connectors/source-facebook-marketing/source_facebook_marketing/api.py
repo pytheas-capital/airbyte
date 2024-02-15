@@ -23,7 +23,9 @@ class FacebookAPIException(Exception):
     """General class for all API errors"""
 
 
-backoff_policy = retry_pattern(backoff.expo, FacebookRequestError, max_tries=5, factor=5)
+backoff_policy = retry_pattern(
+    backoff.expo, FacebookRequestError, max_tries=5, factor=5
+)
 
 
 class MyFacebookAdsApi(FacebookAdsApi):
@@ -86,7 +88,9 @@ class MyFacebookAdsApi(FacebookAdsApi):
                 )
                 pause_interval = max(
                     pause_interval,
-                    pendulum.duration(minutes=usage_limits.get("estimated_time_to_regain_access", 0)),
+                    pendulum.duration(
+                        minutes=usage_limits.get("estimated_time_to_regain_access", 0)
+                    ),
                 )
 
         return usage, pause_interval
@@ -108,8 +112,13 @@ class MyFacebookAdsApi(FacebookAdsApi):
             # in case it is failed inner request the headers might not be present
             if "headers" not in record:
                 continue
-            headers = {header["name"].lower(): header["value"] for header in record["headers"]}
-            usage_from_response, pause_interval_from_response = self._parse_call_rate_header(headers)
+            headers = {
+                header["name"].lower(): header["value"] for header in record["headers"]
+            }
+            (
+                usage_from_response,
+                pause_interval_from_response,
+            ) = self._parse_call_rate_header(headers)
             usage = max(usage, usage_from_response)
             pause_interval = max(pause_interval_from_response, pause_interval)
         return usage, pause_interval
@@ -117,14 +126,20 @@ class MyFacebookAdsApi(FacebookAdsApi):
     def _handle_call_rate_limit(self, response, params):
         if "batch" in params:
             records = response.json()
-            usage, pause_interval = self._get_max_usage_pause_interval_from_batch(records)
+            usage, pause_interval = self._get_max_usage_pause_interval_from_batch(
+                records
+            )
         else:
             headers = response.headers()
             usage, pause_interval = self._parse_call_rate_header(headers)
 
         if usage >= self.MIN_RATE:
-            sleep_time = self._compute_pause_interval(usage=usage, pause_interval=pause_interval)
-            logger.warning(f"Utilization is too high ({usage})%, pausing for {sleep_time}")
+            sleep_time = self._compute_pause_interval(
+                usage=usage, pause_interval=pause_interval
+            )
+            logger.warning(
+                f"Utilization is too high ({usage})%, pausing for {sleep_time}"
+            )
             sleep(sleep_time.total_seconds())
 
     def _update_insights_throttle_limit(self, response: FacebookResponse):
@@ -148,7 +163,11 @@ class MyFacebookAdsApi(FacebookAdsApi):
         based on the logic from `@backoff_policy` (common.py > `reduce_request_record_limit` and `revert_request_record_limit`)
         """
         params = True if params else False
-        return params and not self.request_record_limit_is_reduced and self.last_api_call_is_successful
+        return (
+            params
+            and not self.request_record_limit_is_reduced
+            and self.last_api_call_is_successful
+        )
 
     @backoff_policy
     def call(
@@ -164,7 +183,9 @@ class MyFacebookAdsApi(FacebookAdsApi):
         """Makes an API call, delegate actual work to parent class and handles call rates"""
         if self._should_restore_default_page_size(params):
             params.update(**{"limit": self.default_page_size})
-        response = super().call(method, path, params, headers, files, url_override, api_version)
+        response = super().call(
+            method, path, params, headers, files, url_override, api_version
+        )
         self._update_insights_throttle_limit(response)
         self._handle_call_rate_limit(response, params)
         return response
