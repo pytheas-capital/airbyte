@@ -5,6 +5,7 @@
 import pendulum
 import pytest
 from pendulum import duration
+
 from source_facebook_marketing.api import MyFacebookAdsApi
 from source_facebook_marketing.streams import (
     AdSets,

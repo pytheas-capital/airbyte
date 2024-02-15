@@ -16,8 +16,14 @@ from facebook_business.adobjects.adset import AdSet
 from facebook_business.adobjects.adsinsights import AdsInsights
 from facebook_business.adobjects.campaign import Campaign
 from facebook_business.api import FacebookAdsApiBatch, FacebookBadObjectError
+
 from source_facebook_marketing.api import MyFacebookAdsApi
-from source_facebook_marketing.streams.async_job import InsightAsyncJob, ParentAsyncJob, Status, update_in_batch
+from source_facebook_marketing.streams.async_job import (
+    InsightAsyncJob,
+    ParentAsyncJob,
+    Status,
+    update_in_batch,
+)
 
 
 @pytest.fixture(name="adreport")

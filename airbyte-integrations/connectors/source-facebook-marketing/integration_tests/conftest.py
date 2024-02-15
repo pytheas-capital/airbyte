@@ -6,6 +6,7 @@
 import json
 
 import pytest
+
 from source_facebook_marketing.config_migrations import MigrateAccountIdToArray
 
 
@@ -62,7 +63,6 @@ def config_with_include_deleted(config):
             "PREAPPROVED",
             "WITH_ISSUES",
         ],
-        "adcreative_statuses": ["ACTIVE", "DELETED", "IN_PROCESS", "WITH_ISSUES"],
     }
     new_config.pop("_limit", None)
     new_config.pop("end_date", None)

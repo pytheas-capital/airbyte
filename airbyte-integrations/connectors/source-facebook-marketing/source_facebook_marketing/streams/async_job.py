@@ -16,8 +16,14 @@ from facebook_business.adobjects.adreportrun import AdReportRun
 from facebook_business.adobjects.adset import AdSet
 from facebook_business.adobjects.campaign import Campaign
 from facebook_business.adobjects.objectparser import ObjectParser
-from facebook_business.api import FacebookAdsApi, FacebookAdsApiBatch, FacebookBadObjectError, FacebookResponse
+from facebook_business.api import (
+    FacebookAdsApi,
+    FacebookAdsApiBatch,
+    FacebookBadObjectError,
+    FacebookResponse,
+)
 from pendulum.duration import Duration
+
 from source_facebook_marketing.streams.common import retry_pattern
 
 from ..utils import validate_start_date

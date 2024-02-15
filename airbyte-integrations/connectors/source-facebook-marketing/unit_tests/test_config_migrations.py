@@ -8,6 +8,7 @@ from typing import Any, Mapping
 
 from airbyte_cdk.models import OrchestratorType, Type
 from airbyte_cdk.sources import Source
+
 from source_facebook_marketing.config_migrations import MigrateAccountIdToArray
 from source_facebook_marketing.source import SourceFacebookMarketing
 

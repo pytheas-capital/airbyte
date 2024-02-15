@@ -8,7 +8,15 @@ import tempfile
 from typing import Any, List, MutableMapping, Set, Tuple
 
 import pytest
-from airbyte_cdk.models import AirbyteMessage, ConfiguredAirbyteCatalog, ConfiguredAirbyteStream, DestinationSyncMode, SyncMode, Type
+from airbyte_cdk.models import (
+    AirbyteMessage,
+    ConfiguredAirbyteCatalog,
+    ConfiguredAirbyteStream,
+    DestinationSyncMode,
+    SyncMode,
+    Type,
+)
+
 from source_facebook_marketing.source import SourceFacebookMarketing
 
 
@@ -63,11 +71,12 @@ class TestFacebookMarketingSource:
         records, states = self._read_records(config_with_include_deleted, catalog)
         deleted_records = list(filter(self._deleted_record, records))
         is_specific_deleted_pulled = deleted_id in list(map(self._object_id, records))
+        account_id = config_with_include_deleted["account_id"]
 
         assert states, "incremental read should produce states"
         for name, state in states[-1].state.data.items():
             assert (
-                "filter_statuses" in state
+                "filter_statuses" in state[account_id]
             ), f"State for {name} should include `filter_statuses` flag"
 
         assert (
@@ -78,30 +87,71 @@ class TestFacebookMarketingSource:
         ), f"{stream_name} stream should have a deleted record with id={deleted_id}"
 
     @pytest.mark.parametrize(
-        "stream_name, deleted_num, include_deleted_in_state",
+        "stream_name, deleted_num, filter_statuses",
         [
             ("ads", 2, False),
             ("campaigns", 3, False),
             ("ad_sets", 1, False),
-            ("ads", 0, True),
-            ("campaigns", 0, True),
-            ("ad_sets", 0, True),
+            (
+                "ads",
+                0,
+                [
+                    "ACTIVE",
+                    "ADSET_PAUSED",
+                    "ARCHIVED",
+                    "CAMPAIGN_PAUSED",
+                    "DELETED",
+                    "DISAPPROVED",
+                    "IN_PROCESS",
+                    "PAUSED",
+                    "PENDING_BILLING_INFO",
+                    "PENDING_REVIEW",
+                    "PREAPPROVED",
+                    "WITH_ISSUES",
+                ],
+            ),
+            (
+                "campaigns",
+                0,
+                [
+                    "ACTIVE",
+                    "ARCHIVED",
+                    "CAMPAIGN_PAUSED",
+                    "DELETED",
+                    "IN_PROCESS",
+                    "PAUSED",
+                    "WITH_ISSUES",
+                ],
+            ),
+            (
+                "ad_sets",
+                0,
+                [
+                    "ACTIVE",
+                    "ARCHIVED",
+                    "CAMPAIGN_PAUSED",
+                    "DELETED",
+                    "IN_PROCESS",
+                    "PAUSED",
+                    "WITH_ISSUES",
+                ],
+            ),
         ],
     )
     def test_streams_with_include_deleted_and_state(
         self,
         stream_name,
         deleted_num,
-        include_deleted_in_state,
+        filter_statuses,
         config_with_include_deleted,
         configured_catalog,
         state,
     ):
         """Should ignore state because of filter_statuses changed"""
-        if include_deleted_in_state:
+        if filter_statuses:
             state = copy.deepcopy(state)
             for value in state.values():
-                value["filter_statuses"] = ["ARCHIVED"]
+                value["filter_statuses"] = filter_statuses
 
         catalog = self._slice_catalog(configured_catalog, {stream_name})
         records, states = self._read_records(

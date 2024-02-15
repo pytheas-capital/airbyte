@@ -5,6 +5,7 @@
 import pendulum
 from facebook_business import FacebookAdsApi, FacebookSession
 from pytest import fixture
+
 from source_facebook_marketing.api import API
 
 FB_API_VERSION = FacebookAdsApi.API_VERSION

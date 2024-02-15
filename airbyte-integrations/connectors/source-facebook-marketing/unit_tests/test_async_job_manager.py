@@ -4,6 +4,7 @@
 
 import pytest
 from facebook_business.api import FacebookAdsApiBatch
+
 from source_facebook_marketing.api import MyFacebookAdsApi
 from source_facebook_marketing.streams.async_job import InsightAsyncJob, ParentAsyncJob
 from source_facebook_marketing.streams.async_job_manager import InsightAsyncJobManager
