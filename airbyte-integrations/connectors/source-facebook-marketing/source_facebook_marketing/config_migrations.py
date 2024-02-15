@@ -47,9 +47,7 @@ class MigrateAccountIdToArray:
         return config
 
     @classmethod
-    def modify_and_save(
-        cls, config_path: str, source: Source, config: Mapping[str, Any]
-    ) -> Mapping[str, Any]:
+    def modify_and_save(cls, config_path: str, source: Source, config: Mapping[str, Any]) -> Mapping[str, Any]:
         # modify the config
         migrated_config = cls.transform(config)
         # save the config
@@ -60,9 +58,7 @@ class MigrateAccountIdToArray:
     @classmethod
     def emit_control_message(cls, migrated_config: Mapping[str, Any]) -> None:
         # add the Airbyte Control Message to message repo
-        cls.message_repository.emit_message(
-            create_connector_config_control_message(migrated_config)
-        )
+        cls.message_repository.emit_message(create_connector_config_control_message(migrated_config))
         # emit the Airbyte Control Message from message queue to stdout
         for message in cls.message_repository._message_queue:
             print(message.json(exclude_unset=True))

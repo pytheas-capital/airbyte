@@ -54,7 +54,6 @@
           "title": "ValidCampaignStatuses",
           "description": "An enumeration.",
           "enum": [
-            "ALL",
             "ACTIVE",
             "ARCHIVED",
             "DELETED",
@@ -74,7 +73,6 @@
           "title": "ValidAdSetStatuses",
           "description": "An enumeration.",
           "enum": [
-            "ALL",
             "ACTIVE",
             "ARCHIVED",
             "CAMPAIGN_PAUSED",
@@ -95,7 +93,6 @@
           "title": "ValidAdStatuses",
           "description": "An enumeration.",
           "enum": [
-            "ALL",
             "ACTIVE",
             "ADSET_PAUSED",
             "ARCHIVED",
@@ -115,13 +112,13 @@
         "title": "Fetch Thumbnail Images from Ad Creative",
         "description": "Set to active if you want to fetch the thumbnail_url and store the result in thumbnail_data_url for each Ad Creative.",
         "default": false,
-        "order": 5,
+        "order": 7,
         "type": "boolean"
       },
       "custom_insights": {
         "title": "Custom Insights",
         "description": "A list which contains ad statistics entries, each entry must have a name and can contains fields, breakdowns or action_breakdowns. Click on \"add\" to fill this field.",
-        "order": 6,
+        "order": 8,
         "type": "array",
         "items": {
           "title": "InsightConfig",
@@ -407,7 +404,7 @@
         "title": "Page Size of Requests",
         "description": "Page size used when sending requests to Facebook API to specify number of records per page when response has pagination. Most users do not need to set this field unless they specifically need to tune the connector to address specific issues or use cases.",
         "default": 100,
-        "order": 7,
+        "order": 10,
         "exclusiveMinimum": 0,
         "type": "integer"
       },
@@ -415,7 +412,7 @@
         "title": "Insights Lookback Window",
         "description": "The attribution window. Facebook freezes insight data 28 days after it was generated, which means that all data from the past 28 days may have changed since we last emitted it, so you can retrieve refreshed insights from the past by setting this parameter. If you set a custom lookback window value in Facebook account, please provide the same value here.",
         "default": 28,
-        "order": 8,
+        "order": 11,
         "maximum": 28,
         "mininum": 1,
         "exclusiveMinimum": 0,
@@ -425,7 +422,7 @@
         "title": "Insights Job Timeout",
         "description": "Insights Job Timeout establishes the maximum amount of time (in minutes) of waiting for the report job to complete. When timeout is reached the job is considered failed and we are trying to request smaller amount of data by breaking the job to few smaller ones. If you definitely know that 60 minutes is not enough for your report to be processed then you can decrease the timeout value, so we start breaking job to smaller parts faster.",
         "default": 60,
-        "order": 9,
+        "order": 12,
         "maximum": 60,
         "mininum": 10,
         "exclusiveMinimum": 0,

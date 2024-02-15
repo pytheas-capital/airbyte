@@ -9,7 +9,6 @@ from typing import List, Optional, Set
 
 from airbyte_cdk.sources.config import BaseConfig
 from facebook_business.adobjects.ad import Ad
-from facebook_business.adobjects.adcreative import AdCreative
 from facebook_business.adobjects.adset import AdSet
 from facebook_business.adobjects.adsinsights import AdsInsights
 from facebook_business.adobjects.campaign import Campaign
@@ -20,9 +19,7 @@ logger = logging.getLogger("airbyte")
 
 ValidFields = Enum("ValidEnums", AdsInsights.Field.__dict__)
 ValidBreakdowns = Enum("ValidBreakdowns", AdsInsights.Breakdowns.__dict__)
-ValidActionBreakdowns = Enum(
-    "ValidActionBreakdowns", AdsInsights.ActionBreakdowns.__dict__
-)
+ValidActionBreakdowns = Enum("ValidActionBreakdowns", AdsInsights.ActionBreakdowns.__dict__)
 ValidCampaignStatuses = Enum("ValidCampaignStatuses", Campaign.EffectiveStatus.__dict__)
 ValidAdSetStatuses = Enum("ValidAdSetStatuses", AdSet.EffectiveStatus.__dict__)
 ValidAdStatuses = Enum("ValidAdStatuses", Ad.EffectiveStatus.__dict__)
@@ -200,14 +197,14 @@ class ConnectorConfig(BaseConfig):
 
     fetch_thumbnail_images: bool = Field(
         title="Fetch Thumbnail Images from Ad Creative",
-        order=8,
+        order=7,
         default=False,
         description="Set to active if you want to fetch the thumbnail_url and store the result in thumbnail_data_url for each Ad Creative.",
     )
 
     custom_insights: Optional[List[InsightConfig]] = Field(
         title="Custom Insights",
-        order=9,
+        order=8,
         description=(
             "A list which contains ad statistics entries, each entry must have a name and can contains fields, "
             'breakdowns or action_breakdowns. Click on "add" to fill this field.'
@@ -240,7 +237,7 @@ class ConnectorConfig(BaseConfig):
 
     insights_job_timeout: Optional[PositiveInt] = Field(
         title="Insights Job Timeout",
-        order=9,
+        order=12,
         description=(
             "Insights Job Timeout establishes the maximum amount of time (in minutes) of waiting for the report job to complete. "
             "When timeout is reached the job is considered failed and we are trying to request smaller amount of data by breaking the job to few smaller ones. "

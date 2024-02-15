@@ -34,11 +34,7 @@ class CursorPatch(Cursor):
         if self._finished_iteration:
             return False
 
-        if (
-            self._include_summary
-            and "default_summary" not in self.params
-            and "summary" not in self.params
-        ):
+        if self._include_summary and "default_summary" not in self.params and "summary" not in self.params:
             self.params["summary"] = True
 
         response_obj = self._api.call(
@@ -60,11 +56,7 @@ class CursorPatch(Cursor):
             # Indicate if this was the last page
             self._finished_iteration = True
 
-        if (
-            self._include_summary
-            and "summary" in response
-            and "total_count" in response["summary"]
-        ):
+        if self._include_summary and "summary" in response and "total_count" in response["summary"]:
             self._total_count = response["summary"]["total_count"]
 
         if self._include_summary and "summary" in response:

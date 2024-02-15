@@ -18,9 +18,7 @@ DATA_RETENTION_PERIOD = 37
 DateOrDateTime = Union[Date, DateTime]
 
 
-def cast_to_type(
-    input_date: DateOrDateTime, target_date: DateOrDateTime
-) -> DateOrDateTime:
+def cast_to_type(input_date: DateOrDateTime, target_date: DateOrDateTime) -> DateOrDateTime:
     # casts `target_date` to the type of `input_date`
     if type(target_date) == type(input_date):
         return target_date
@@ -47,19 +45,17 @@ def validate_start_date(start_date: DateOrDateTime) -> DateOrDateTime:
         logger.warning(message)
         return cast_to_type(start_date, today)
     elif start_date < retention_date:
-        message = f"The start date cannot be beyond {DATA_RETENTION_PERIOD} months from the current date. Set start date to {retention_date}."
+        message = (
+            f"The start date cannot be beyond {DATA_RETENTION_PERIOD} months from the current date. Set start date to {retention_date}."
+        )
         logger.warning(message)
         return cast_to_type(start_date, retention_date)
     return start_date
 
 
-def validate_end_date(
-    start_date: DateOrDateTime, end_date: DateOrDateTime
-) -> DateOrDateTime:
+def validate_end_date(start_date: DateOrDateTime, end_date: DateOrDateTime) -> DateOrDateTime:
     if start_date > end_date:
-        message = (
-            f"The end date must be after start date. Set end date to {start_date}."
-        )
+        message = f"The end date must be after start date. Set end date to {start_date}."
         logger.warning(message)
         return start_date
     return end_date
