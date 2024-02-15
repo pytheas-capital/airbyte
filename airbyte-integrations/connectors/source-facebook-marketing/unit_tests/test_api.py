@@ -4,10 +4,9 @@
 
 import pendulum
 import pytest
+import source_facebook_marketing
 from facebook_business import FacebookAdsApi, FacebookSession
 from facebook_business.adobjects.adaccount import AdAccount
-
-import source_facebook_marketing
 
 FB_API_VERSION = FacebookAdsApi.API_VERSION
 

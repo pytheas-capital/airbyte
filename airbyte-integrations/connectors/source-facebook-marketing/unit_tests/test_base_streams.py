@@ -8,12 +8,8 @@ from typing import Any, Iterable, Mapping
 import pytest
 from facebook_business import FacebookSession
 from facebook_business.api import FacebookAdsApi, FacebookAdsApiBatch
-
 from source_facebook_marketing.api import MyFacebookAdsApi
-from source_facebook_marketing.streams.base_streams import (
-    FBMarketingIncrementalStream,
-    FBMarketingStream,
-)
+from source_facebook_marketing.streams.base_streams import FBMarketingIncrementalStream, FBMarketingStream
 
 
 @pytest.fixture(name="mock_batch_responses")

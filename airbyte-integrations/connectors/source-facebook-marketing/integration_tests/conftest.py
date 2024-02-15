@@ -6,7 +6,6 @@
 import json
 
 import pytest
-
 from source_facebook_marketing.config_migrations import MigrateAccountIdToArray
 
 

@@ -14,7 +14,6 @@ from airbyte_cdk.sources.streams.availability_strategy import AvailabilityStrate
 from airbyte_cdk.sources.utils.transform import TransformConfig, TypeTransformer
 from facebook_business.adobjects.abstractobject import AbstractObject
 from facebook_business.exceptions import FacebookRequestError
-
 from source_facebook_marketing.streams.common import traced_exception
 
 from .common import deep_merge

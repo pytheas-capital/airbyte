@@ -8,7 +8,6 @@ import pendulum
 import pytest
 from airbyte_cdk.models import SyncMode
 from pendulum import duration
-
 from source_facebook_marketing.streams import AdsInsights
 from source_facebook_marketing.streams.async_job import AsyncJob, InsightAsyncJob
 
