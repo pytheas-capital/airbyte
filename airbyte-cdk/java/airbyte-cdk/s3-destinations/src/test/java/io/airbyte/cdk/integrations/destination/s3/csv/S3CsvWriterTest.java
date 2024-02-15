@@ -289,8 +289,8 @@ class S3CsvWriterTest {
             f6767f7d-ce1e-45cc-92db-2ad3dfdd088e,"{""foo"":73}",%s\r
             2b95a13f-d54f-4370-a712-1c7bf2716190,"{""bar"":84}",%s\r
             """,
-            Timestamp.from(Instant.ofEpochMilli(1234)),
-            Timestamp.from(Instant.ofEpochMilli(2345))),
+            Instant.ofEpochMilli(1234),
+            Instant.ofEpochMilli(2345)),
         outputStreams.get(0).toString(StandardCharsets.UTF_8));
   }
 
