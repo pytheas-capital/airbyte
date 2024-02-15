@@ -6,6 +6,8 @@ import io.airbyte.cdk.db.jdbc.JdbcDatabase
 import io.airbyte.commons.json.Jsons
 import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
 import io.airbyte.integrations.base.destination.typing_deduping.migrators.Migration
+import org.jooq.conf.ParamType
+import org.jooq.impl.DSL.*
 
 class ExtractedAtUtcTimezoneMigration(private val database: JdbcDatabase) : Migration<SnowflakeState> {
 
@@ -15,15 +17,13 @@ class ExtractedAtUtcTimezoneMigration(private val database: JdbcDatabase) : Migr
         }
         
         val rawRecordTimezone: JsonNode? = database.queryJsons(
-                { connection ->
-                    // TODO write an actual sql query
-                    connection.prepareStatement("""
-                        select
-                          extract(timezone_hour from "_airbyte_extracted_at") as tzh,
-                          extract(timezone_minute from "_airbyte_extracted_at") as tzm
-                        FROM "airbyte_internal"."whatever"
-                        LIMIT 1
-                    """.trimIndent())
+                { connection -> connection.prepareStatement(
+                        select(
+                                field(sql("extract(timezone_hour from \"_airbyte_extracted_at\")")).`as`("tzh"),
+                                field(sql("extract(timezone_minute from \"_airbyte_extracted_at\")")).`as`("tzm")
+                        ).from(table(quotedName(stream.id().rawNamespace, stream.id().rawName)))
+                                .limit(1)
+                                .getSQL(ParamType.INLINED))
                 },
                 { rs -> (Jsons.emptyObject() as ObjectNode)
                         .put("tzh", rs.getInt("tzh"))
