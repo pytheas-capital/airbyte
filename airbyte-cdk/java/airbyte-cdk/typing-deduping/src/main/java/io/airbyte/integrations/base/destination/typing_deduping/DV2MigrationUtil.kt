@@ -11,11 +11,11 @@ class DV2MigrationUtil {
     private val LOGGER: Logger = LoggerFactory.getLogger(DV2MigrationUtil::class.java)
 
     @JvmStatic
-    fun <DialectTableDefinition> executeRawTableMigrations(
+    fun executeRawTableMigrations(
         sqlGenerator: SqlGenerator,
-        destinationHandler: DestinationHandler<DialectTableDefinition>,
+        destinationHandler: DestinationHandler,
         parsedCatalog: ParsedCatalog,
-        v1V2Migrator: DestinationV1V2Migrator<DialectTableDefinition>,
+        v1V2Migrator: DestinationV1V2Migrator,
         v2TableMigrator: V2TableMigrator
     ) {
       prepareSchemas(sqlGenerator, destinationHandler, parsedCatalog)
@@ -40,9 +40,9 @@ class DV2MigrationUtil {
       FutureUtils.reduceExceptions(prepareTablesTasks, "The following exceptions were thrown attempting to prepare tables:\n")
     }
 
-    private fun <DialectTableDefinition> prepareSchemas(
+    private fun prepareSchemas(
         sqlGenerator: SqlGenerator,
-        destinationHandler: DestinationHandler<DialectTableDefinition>,
+        destinationHandler: DestinationHandler,
         parsedCatalog: ParsedCatalog) {
       val rawSchema = parsedCatalog.streams.stream().map { stream: StreamConfig -> stream.id.rawNamespace }
       val finalSchema = parsedCatalog.streams.stream().map { stream: StreamConfig -> stream.id.finalNamespace }
