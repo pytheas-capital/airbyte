@@ -311,15 +311,14 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
   @Override
   public void commitDestinationStates(final Map<StreamId, DestinationState> destinationStates) throws Exception {
     // Delete all state records where the stream name+namespace match one of our states
-    Condition deleteCondition = DSL.trueCondition();
-    for (Map.Entry<StreamId, DestinationState> destinationState : destinationStates.entrySet()) {
-      final StreamId streamId = destinationState.getKey();
-      deleteCondition = deleteCondition.or(
-          field(DESTINATION_STATE_TABLE_COLUMN_NAME).eq(streamId.originalName())
-              .and(field(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE).eq(streamId.originalNamespace())));
-    }
     String deleteStates = getDslContext().deleteFrom(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
-        .where(deleteCondition)
+        .where(destinationStates.keySet().stream()
+            .map(streamId -> field(DESTINATION_STATE_TABLE_COLUMN_NAME).eq(streamId.originalName())
+                .and(field(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE).eq(streamId.originalNamespace())))
+            .reduce(
+                DSL.trueCondition(),
+                Condition::or
+            ))
         .getSQL(ParamType.INLINED);
 
     // Reinsert all of our states
