@@ -9,6 +9,7 @@ import static io.airbyte.cdk.integrations.util.ConnectorExceptionUtil.returnOrLo
 import static io.airbyte.integrations.base.destination.typing_deduping.FutureUtils.countOfTypingDedupingThreads;
 import static io.airbyte.integrations.base.destination.typing_deduping.FutureUtils.reduceExceptions;
 import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toMap;
 
 import io.airbyte.cdk.integrations.destination.StreamSyncSummary;
 import io.airbyte.commons.concurrency.CompletableFutures;
@@ -80,6 +81,11 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
 
   private final ExecutorService executorService;
 
+  public record TableSetupResult<DestinationState>(
+      StreamId streamId,
+      DestinationState updatedState,
+      Optional<Exception> error) {}
+
   public DefaultTyperDeduper(final SqlGenerator sqlGenerator,
                              final DestinationHandler<DestinationState> destinationHandler,
                              final ParsedCatalog parsedCatalog,
@@ -112,8 +118,15 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
   }
 
   @Override
-  public void executeRawTableMigrations() {
-    DV2MigrationUtil.executeRawTableMigrations(sqlGenerator, destinationHandler, parsedCatalog, v1V2Migrator, v2TableMigrator);
+  public void executeRawTableMigrations() throws Exception {
+    DV2MigrationUtil.executeRawTableMigrations(
+        destinationHandler.gatherInitialState(parsedCatalog.streams()),
+        sqlGenerator,
+        destinationHandler,
+        parsedCatalog,
+        v1V2Migrator,
+        v2TableMigrator,
+        migrations);
   }
 
   @Override
@@ -125,23 +138,31 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
     LOGGER.info("Preparing tables");
 
     final List<DestinationInitialState<DestinationState>> initialStates = destinationHandler.gatherInitialState(parsedCatalog.streams());
-    final List<Either<? extends Exception, Void>> prepareTablesFutureResult = CompletableFutures.allOf(
+    final List<Either<? extends Exception, TableSetupResult<DestinationState>>> prepareTablesFutureResult = CompletableFutures.allOf(
         initialStates.stream().map(this::prepareTablesFuture).toList()).toCompletableFuture().join();
+
+    Map<StreamId, DestinationState> updatedStates = prepareTablesFutureResult.stream()
+        // TODO handle errors (i.e. getLeft)
+        .collect(toMap(s -> s.getRight().streamId, s -> s.getRight().updatedState));
+    destinationHandler.commitDestinationStates(updatedStates);
+
     returnOrLogAndThrowFirst("The following exceptions were thrown attempting to prepare tables:\n", prepareTablesFutureResult);
   }
 
-  private CompletionStage<Void> prepareTablesFuture(final DestinationInitialState<DestinationState> initialState) {
+  private CompletionStage<TableSetupResult<DestinationState>> prepareTablesFuture(final DestinationInitialState<DestinationState> initialState) {
     // For each stream, make sure that its corresponding final table exists.
     // Also, for OVERWRITE streams, decide if we're writing directly to the final table, or into an
     // _airbyte_tmp table.
     return CompletableFuture.supplyAsync(() -> {
-      final var stream = initialState.streamConfig();
+      DestinationInitialState<DestinationState> currentState = initialState;
+      final var stream = currentState.streamConfig();
       try {
+        boolean softReset = false;
         if (initialState.isFinalTablePresent()) {
           LOGGER.info("Final Table exists for stream {}", stream.id().finalName());
           // The table already exists. Decide whether we're writing to it directly, or using a tmp table.
           if (stream.destinationSyncMode() == DestinationSyncMode.OVERWRITE) {
-            if (!initialState.isFinalTableEmpty() || initialState.isSchemaMismatch()) {
+            if (!currentState.isFinalTableEmpty() || currentState.isSchemaMismatch()) {
               // We want to overwrite an existing table. Write into a tmp table. We'll overwrite the table at the
               // end of the sync.
               overwriteStreamsWithTmpTable.add(stream.id());
@@ -153,9 +174,9 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
                   stream.id().finalName());
             }
 
-          } else if (initialState.isSchemaMismatch()) {
+          } else if (currentState.isSchemaMismatch()) {
             // We're loading data directly into the existing table. Make sure it has the right schema.
-            TypeAndDedupeTransaction.executeSoftReset(sqlGenerator, destinationHandler, stream);
+            softReset = true;
           }
         } else {
           LOGGER.info("Final Table does not exist for stream {}, creating.", stream.id().finalName());
@@ -163,7 +184,12 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
           destinationHandler.execute(sqlGenerator.createTable(stream, NO_SUFFIX, false));
         }
 
-        initialRawTableStateByStream.put(stream.id(), initialState.initialRawTableState());
+        if (softReset) {
+          // TODO also fetch soft reset from migration results
+          TypeAndDedupeTransaction.executeSoftReset(sqlGenerator, destinationHandler, stream);
+        }
+
+        initialRawTableStateByStream.put(stream.id(), currentState.initialRawTableState());
 
         streamsWithSuccessfulSetup.add(Pair.of(stream.id().originalNamespace(), stream.id().originalName()));
 
@@ -176,10 +202,10 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
         // immediately acquire the lock.
         internalTdLocks.put(stream.id(), new ReentrantLock());
 
-        return null;
+        return new TableSetupResult<>(stream.id(), currentState.destinationState(), Optional.empty());
       } catch (final Exception e) {
         LOGGER.error("Exception occurred while preparing tables for stream " + stream.id().originalName(), e);
-        throw new RuntimeException(e);
+        return new TableSetupResult<>(stream.id(), currentState.destinationState(), Optional.of(e));
       }
     }, this.executorService);
   }

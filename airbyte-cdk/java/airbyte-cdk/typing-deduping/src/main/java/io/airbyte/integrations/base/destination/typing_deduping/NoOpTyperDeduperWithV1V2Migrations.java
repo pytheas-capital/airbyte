@@ -9,6 +9,7 @@ import static io.airbyte.integrations.base.destination.typing_deduping.FutureUti
 
 import io.airbyte.cdk.integrations.destination.StreamSyncSummary;
 import io.airbyte.protocol.models.v0.StreamDescriptor;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,7 +51,8 @@ public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
 
   @Override
   public void executeRawTableMigrations() {
-    DV2MigrationUtil.executeRawTableMigrations(sqlGenerator, destinationHandler, parsedCatalog, v1V2Migrator, v2TableMigrator);
+    // TODO
+    DV2MigrationUtil.executeRawTableMigrations(null, sqlGenerator, destinationHandler, parsedCatalog, v1V2Migrator, v2TableMigrator, Collections.emptyList());
   }
 
   @Override
