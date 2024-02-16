@@ -8,7 +8,7 @@ package io.airbyte.integrations.base.destination.typing_deduping;
  * Interface representing the initial state of a destination table.
  *
  */
-public interface DestinationInitialState {
+public interface DestinationInitialState<DestinationState> {
 
   StreamConfig streamConfig();
 
@@ -19,5 +19,7 @@ public interface DestinationInitialState {
   boolean isSchemaMismatch();
 
   boolean isFinalTableEmpty();
+
+  DestinationState destinationState();
 
 }

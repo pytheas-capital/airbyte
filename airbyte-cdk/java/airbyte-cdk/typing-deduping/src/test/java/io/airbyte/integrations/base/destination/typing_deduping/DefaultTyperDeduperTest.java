@@ -32,9 +32,9 @@ import org.junit.jupiter.api.Test;
 public class DefaultTyperDeduperTest {
 
   private MockSqlGenerator sqlGenerator;
-  private DestinationHandler destinationHandler;
+  private DestinationHandler<String> destinationHandler;
 
-  private List<DestinationInitialState> initialStates;
+  private List<DestinationInitialState<String>> initialStates;
 
   private DestinationV1V2Migrator migrator;
   private TyperDeduper typerDeduper;
@@ -43,9 +43,9 @@ public class DefaultTyperDeduperTest {
   void setup() throws Exception {
     sqlGenerator = spy(new MockSqlGenerator());
     destinationHandler = mock(DestinationHandler.class);
-    DestinationInitialState overwriteNsState = mock(DestinationInitialState.class);
-    DestinationInitialState appendNsState = mock(DestinationInitialState.class);
-    DestinationInitialState dedupeNsState = mock(DestinationInitialState.class);
+    DestinationInitialState<String> overwriteNsState = mock(DestinationInitialState.class);
+    DestinationInitialState<String> appendNsState = mock(DestinationInitialState.class);
+    DestinationInitialState<String> dedupeNsState = mock(DestinationInitialState.class);
     StreamConfig overwriteStreamConfig = new StreamConfig(
         new StreamId("overwrite_ns", "overwrite_stream", null, null, "overwrite_ns", "overwrite_stream"),
         null,

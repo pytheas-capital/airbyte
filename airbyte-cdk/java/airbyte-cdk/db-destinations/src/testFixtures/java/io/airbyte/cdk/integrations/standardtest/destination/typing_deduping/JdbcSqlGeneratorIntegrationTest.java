@@ -37,7 +37,7 @@ import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 
-public abstract class JdbcSqlGeneratorIntegrationTest extends BaseSqlGeneratorIntegrationTest {
+public abstract class JdbcSqlGeneratorIntegrationTest<DestinationState> extends BaseSqlGeneratorIntegrationTest<DestinationState> {
 
   protected abstract JdbcDatabase getDatabase();
 

@@ -6,10 +6,10 @@ package io.airbyte.integrations.base.destination.typing_deduping;
 
 import java.util.List;
 
-public interface DestinationHandler {
+public interface DestinationHandler<DestinationState> {
 
   void execute(final Sql sql) throws Exception;
 
-  List<DestinationInitialState> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception;
+  List<DestinationInitialState<DestinationState>> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception;
 
 }

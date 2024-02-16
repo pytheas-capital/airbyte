@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-public abstract class JdbcDestinationHandler implements DestinationHandler {
+public abstract class JdbcDestinationHandler<DestinationState> implements DestinationHandler<DestinationState> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDestinationHandler.class);
 
@@ -65,7 +65,7 @@ public abstract class JdbcDestinationHandler implements DestinationHandler {
   }
 
   private Optional<TableDefinition> findExistingTable(final StreamId id) throws Exception {
-    return findExistingTable(jdbcDatabase, databaseName, id.finalNamespace(), id.finalName());
+    return findExistingTable(id);
   }
 
   private boolean isFinalTableEmpty(final StreamId id) throws Exception {
@@ -149,15 +149,15 @@ public abstract class JdbcDestinationHandler implements DestinationHandler {
   }
 
   @Override
-  public List<DestinationInitialState> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception {
-    final List<CompletionStage<DestinationInitialState>> initialStates = streamConfigs.stream()
+  public List<DestinationInitialState<DestinationState>> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception {
+    final List<CompletionStage<DestinationInitialState<DestinationState>>> initialStates = streamConfigs.stream()
         .map(this::retrieveState)
         .toList();
-    final List<Either<? extends Exception, DestinationInitialState>> states = CompletableFutures.allOf(initialStates).toCompletableFuture().join();
+    final List<Either<? extends Exception, DestinationInitialState<DestinationState>>> states = CompletableFutures.allOf(initialStates).toCompletableFuture().join();
     return ConnectorExceptionUtil.returnOrLogAndThrowFirst("Failed to retrieve initial state", states);
   }
 
-  private CompletionStage<DestinationInitialState> retrieveState(final StreamConfig streamConfig) {
+  private CompletionStage<DestinationInitialState<DestinationState>> retrieveState(final StreamConfig streamConfig) {
     return CompletableFuture.supplyAsync(() -> {
       try {
         final Optional<TableDefinition> finalTableDefinition = findExistingTable(streamConfig.id());
@@ -169,8 +169,9 @@ public abstract class JdbcDestinationHandler implements DestinationHandler {
           isFinalTableEmpty = isFinalTableEmpty(streamConfig.id());
         }
         final InitialRawTableState initialRawTableState = getInitialRawTableState(streamConfig.id());
-        return new DestinationInitialStateImpl(streamConfig, finalTableDefinition.isPresent(), initialRawTableState,
-            isSchemaMismatch, isFinalTableEmpty);
+        return new DestinationInitialStateImpl<>(streamConfig, finalTableDefinition.isPresent(), initialRawTableState,
+            // TODO populate destination state
+            isSchemaMismatch, isFinalTableEmpty, null);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

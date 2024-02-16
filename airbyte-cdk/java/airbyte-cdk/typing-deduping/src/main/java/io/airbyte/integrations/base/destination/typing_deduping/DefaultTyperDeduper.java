@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * Note that #prepareTables() initializes some internal state. The other methods will throw an
  * exception if that method was not called.
  */
-public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper {
+public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TyperDeduper.class);
 
@@ -57,7 +57,7 @@ public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper
   private static final String TMP_OVERWRITE_TABLE_SUFFIX = "_airbyte_tmp";
 
   private final SqlGenerator sqlGenerator;
-  private final DestinationHandler destinationHandler;
+  private final DestinationHandler<DestinationState> destinationHandler;
 
   private final DestinationV1V2Migrator v1V2Migrator;
   private final V2TableMigrator v2TableMigrator;
@@ -79,7 +79,7 @@ public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper
   private final ExecutorService executorService;
 
   public DefaultTyperDeduper(final SqlGenerator sqlGenerator,
-                             final DestinationHandler destinationHandler,
+                             final DestinationHandler<DestinationState> destinationHandler,
                              final ParsedCatalog parsedCatalog,
                              final DestinationV1V2Migrator v1V2Migrator,
                              final V2TableMigrator v2TableMigrator,
@@ -99,7 +99,7 @@ public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper
 
   public DefaultTyperDeduper(
                              final SqlGenerator sqlGenerator,
-                             final DestinationHandler destinationHandler,
+                             final DestinationHandler<DestinationState> destinationHandler,
                              final ParsedCatalog parsedCatalog,
                              final DestinationV1V2Migrator v1V2Migrator,
                              final int defaultThreadCount) {
@@ -119,13 +119,13 @@ public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper
     overwriteStreamsWithTmpTable = ConcurrentHashMap.newKeySet();
     LOGGER.info("Preparing tables");
 
-    final List<DestinationInitialState> initialStates = destinationHandler.gatherInitialState(parsedCatalog.streams());
+    final List<DestinationInitialState<DestinationState>> initialStates = destinationHandler.gatherInitialState(parsedCatalog.streams());
     final List<Either<? extends Exception, Void>> prepareTablesFutureResult = CompletableFutures.allOf(
         initialStates.stream().map(this::prepareTablesFuture).toList()).toCompletableFuture().join();
     returnOrLogAndThrowFirst("The following exceptions were thrown attempting to prepare tables:\n", prepareTablesFutureResult);
   }
 
-  private CompletionStage<Void> prepareTablesFuture(final DestinationInitialState initialState) {
+  private CompletionStage<Void> prepareTablesFuture(final DestinationInitialState<DestinationState> initialState) {
     // For each stream, make sure that its corresponding final table exists.
     // Also, for OVERWRITE streams, decide if we're writing directly to the final table, or into an
     // _airbyte_tmp table.
