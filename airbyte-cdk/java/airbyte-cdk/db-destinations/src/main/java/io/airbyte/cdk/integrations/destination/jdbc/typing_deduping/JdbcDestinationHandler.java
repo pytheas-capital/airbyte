@@ -8,12 +8,20 @@ import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_META;
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_RAW_ID;
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.V2_FINAL_TABLE_METADATA_COLUMNS;
+import static java.util.stream.Collectors.toMap;
+import static org.jooq.impl.DSL.asterisk;
+import static org.jooq.impl.DSL.createTableIfNotExists;
+import static org.jooq.impl.DSL.deleteFrom;
 import static org.jooq.impl.DSL.exists;
 import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.insertInto;
 import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.quotedName;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.selectOne;
+import static org.jooq.impl.DSL.table;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.airbyte.cdk.db.jdbc.JdbcDatabase;
 import io.airbyte.cdk.integrations.destination.jdbc.ColumnDefinition;
 import io.airbyte.cdk.integrations.destination.jdbc.TableDefinition;
@@ -21,6 +29,7 @@ import io.airbyte.cdk.integrations.util.ConnectorExceptionUtil;
 import io.airbyte.commons.concurrency.CompletableFutures;
 import io.airbyte.commons.exceptions.SQLRuntimeException;
 import io.airbyte.commons.functional.Either;
+import io.airbyte.commons.json.Jsons;
 import io.airbyte.integrations.base.destination.typing_deduping.AirbyteProtocolType;
 import io.airbyte.integrations.base.destination.typing_deduping.AirbyteType;
 import io.airbyte.integrations.base.destination.typing_deduping.DestinationHandler;
@@ -31,6 +40,7 @@ import io.airbyte.integrations.base.destination.typing_deduping.Sql;
 import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig;
 import io.airbyte.integrations.base.destination.typing_deduping.StreamId;
 import io.airbyte.integrations.base.destination.typing_deduping.Struct;
+import io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -38,6 +48,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,8 +56,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.Condition;
+import org.jooq.InsertValuesStep3;
+import org.jooq.Record;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,14 +69,21 @@ import org.slf4j.LoggerFactory;
 public abstract class JdbcDestinationHandler<DestinationState> implements DestinationHandler<DestinationState> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDestinationHandler.class);
+  private static final String DESTINATION_STATE_TABLE_NAME = "_airbyte_destination_state";
+  private static final String DESTINATION_STATE_TABLE_COLUMN_NAME = "name";
+  private static final String DESTINATION_STATE_TABLE_COLUMN_NAMESPACE = "namespace";
+  private static final String DESTINATION_STATE_TABLE_COLUMN_STATE = "state";
 
   protected final String databaseName;
   protected final JdbcDatabase jdbcDatabase;
+  protected final String rawTableSchemaName;
 
   public JdbcDestinationHandler(final String databaseName,
-                                final JdbcDatabase jdbcDatabase) {
+                                final JdbcDatabase jdbcDatabase,
+                                final String rawTableSchemaName) {
     this.databaseName = databaseName;
     this.jdbcDatabase = jdbcDatabase;
+    this.rawTableSchemaName = rawTableSchemaName;
   }
 
   private Optional<TableDefinition> findExistingTable(final StreamId id) throws Exception {
@@ -150,15 +172,44 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
 
   @Override
   public List<DestinationInitialState<DestinationState>> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception {
+    // Use stream n/ns pair because we don't want to build the full StreamId here
+    CompletableFuture<Map<AirbyteStreamNameNamespacePair, DestinationState>> destinationStatesFuture = CompletableFuture.supplyAsync(() -> {
+      try {
+        // Guarantee the table exists.
+        jdbcDatabase.execute(
+            createTableIfNotExists(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME))
+                .column(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME), SQLDataType.VARCHAR)
+                .column(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE), SQLDataType.VARCHAR)
+                // Just use a string type, even if the destination has a json type.
+                // We're never going to query this column in a fancy way - all our processing can happen client-side.
+                .column(quotedName(DESTINATION_STATE_TABLE_COLUMN_STATE), SQLDataType.VARCHAR)
+                .getSQL(ParamType.INLINED)
+        );
+        // Fetch all records from it. We _could_ filter down to just our streams... but meh. This is small data.
+        return jdbcDatabase.queryJsons(
+            select(asterisk())
+                .from(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME))
+                .getSQL()
+        ).stream().collect(toMap(
+            record -> new AirbyteStreamNameNamespacePair(
+                record.get(DESTINATION_STATE_TABLE_COLUMN_NAME).asText(),
+                record.get(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE).asText()),
+            record -> toDestinationState(Jsons.deserialize(record.get(DESTINATION_STATE_TABLE_COLUMN_STATE).asText()))
+        ));
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
+      }
+    });
+
     final List<CompletionStage<DestinationInitialState<DestinationState>>> initialStates = streamConfigs.stream()
-        .map(this::retrieveState)
+        .map(streamConfig -> retrieveState(destinationStatesFuture, streamConfig))
         .toList();
     final List<Either<? extends Exception, DestinationInitialState<DestinationState>>> states = CompletableFutures.allOf(initialStates).toCompletableFuture().join();
     return ConnectorExceptionUtil.returnOrLogAndThrowFirst("Failed to retrieve initial state", states);
   }
 
-  private CompletionStage<DestinationInitialState<DestinationState>> retrieveState(final StreamConfig streamConfig) {
-    return CompletableFuture.supplyAsync(() -> {
+  private CompletionStage<DestinationInitialState<DestinationState>> retrieveState(final CompletableFuture<Map<AirbyteStreamNameNamespacePair, DestinationState>> destinationStatesFuture, final StreamConfig streamConfig) {
+    return destinationStatesFuture.thenApply(destinationStates -> {
       try {
         final Optional<TableDefinition> finalTableDefinition = findExistingTable(streamConfig.id());
         // Only evaluate schema mismatch & final table emptiness if the final table exists.
@@ -169,9 +220,9 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
           isFinalTableEmpty = isFinalTableEmpty(streamConfig.id());
         }
         final InitialRawTableState initialRawTableState = getInitialRawTableState(streamConfig.id());
+        DestinationState destinationState = destinationStates.getOrDefault(streamConfig.id().asPair(), toDestinationState(Jsons.emptyObject()));
         return new DestinationInitialStateImpl<>(streamConfig, finalTableDefinition.isPresent(), initialRawTableState,
-            // TODO populate destination state
-            isSchemaMismatch, isFinalTableEmpty, null);
+            isSchemaMismatch, isFinalTableEmpty, destinationState);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -249,6 +300,36 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
     return actualColumns.equals(intendedColumns);
   }
 
+  @Override
+  public void commitDestinationStates(final List<DestinationInitialState<TableDefinition, DestinationState>> destinationStates) throws Exception {
+    // Delete all state records where the stream name+namespace match one of our states
+    Condition deleteCondition = DSL.trueCondition();
+    for (DestinationInitialState<TableDefinition, DestinationState> destinationState : destinationStates) {
+      final StreamId streamId = destinationState.streamConfig().id();
+      deleteCondition = deleteCondition.or(
+          field(DESTINATION_STATE_TABLE_COLUMN_NAME).eq(streamId.originalName())
+              .and(field(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE).eq(streamId.originalNamespace())));
+    }
+    String deleteStates = deleteFrom(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
+        .where(deleteCondition)
+        .getSQL(ParamType.INLINED);
+
+    // Reinsert all of our states
+    InsertValuesStep3<Record, String, String, String> insertStatesStep = insertInto(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
+        .columns(
+            field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME), String.class),
+            field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE), String.class),
+            field(quotedName(DESTINATION_STATE_TABLE_COLUMN_STATE), String.class));
+    for (DestinationInitialState<TableDefinition, DestinationState> destinationState : destinationStates) {
+      final StreamId streamId = destinationState.streamConfig().id();
+      final String stateJson = Jsons.serialize(destinationState.destinationState());
+      insertStatesStep = insertStatesStep.values(streamId.originalName(), streamId.originalNamespace(), stateJson);
+    }
+    String insertStates = insertStatesStep.getSQL(ParamType.INLINED);
+
+    jdbcDatabase.executeWithinTransaction(List.of(deleteStates, insertStates));
+  }
+
   /**
    * Convert to the TYPE_NAME retrieved from {@link java.sql.DatabaseMetaData#getColumns}
    *
@@ -256,5 +337,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
    * @return
    */
   protected abstract String toJdbcTypeName(final AirbyteType airbyteType);
+
+  protected abstract DestinationState toDestinationState(final JsonNode json);
 
 }

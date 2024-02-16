@@ -12,4 +12,6 @@ public interface DestinationHandler<DestinationState> {
 
   List<DestinationInitialState<DestinationState>> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception;
 
+  void commitDestinationStates(final List<DestinationInitialState<DestinationState>> destinationStates) throws Exception;
+
 }
