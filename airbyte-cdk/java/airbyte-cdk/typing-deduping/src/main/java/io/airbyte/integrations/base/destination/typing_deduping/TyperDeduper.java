@@ -9,6 +9,26 @@ import io.airbyte.protocol.models.v0.StreamDescriptor;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
+/*
+ * This class wants to do three separate things:
+ * * A migration runner, which handles any changes in raw tables (executeRawTableMigrations)
+ * * A raw table creator, which creates any missing raw tables (currently handled in e.g.
+ *   GeneralStagingFunctions.onStartFunction, BigQueryStagingConsumerFactory.onStartFunction, etc.)
+ * * A T+D runner, which manages the final tables (prepareFinalTables, typeAndDedupe, etc.)
+ *
+ * These would be injectable to the relevant locations, so that we can have:
+ * * DV2 destinations with T+D enabled (i.e. all three objects instantiated for real)
+ * * DV2 destinations with T+D disabled (i.e. noop T+D runner but the other two objects for real)
+ * * DV1 destinations (i.e. all three objects as noop)
+ *
+ * Even more ideally, we'd create an instance per stream, instead of having one instance for the
+ * entire sync. This would massively simplify all the state contained in our implementations - see
+ * DefaultTyperDeduper's pile of Sets and Maps.
+ *
+ * Unfortunately, it's just a pain to inject these objects to everywhere they need to be, and we'd need
+ * to refactor part of the async framework on top of that. There's an obvious overlap with the async
+ * framework's onStart function... which we should deal with eventually.
+ */
 public interface TyperDeduper {
 
   /**

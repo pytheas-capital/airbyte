@@ -6,17 +6,10 @@ package io.airbyte.integrations.base.destination.typing_deduping;
 
 import static io.airbyte.cdk.integrations.base.IntegrationRunner.TYPE_AND_DEDUPE_THREAD_NAME;
 import static io.airbyte.integrations.base.destination.typing_deduping.FutureUtils.countOfTypingDedupingThreads;
-import static io.airbyte.integrations.base.destination.typing_deduping.FutureUtils.reduceExceptions;
 
-import com.google.common.collect.Streams;
 import io.airbyte.cdk.integrations.destination.StreamSyncSummary;
 import io.airbyte.protocol.models.v0.StreamDescriptor;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,8 +17,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This is a NoOp implementation which skips and Typing and Deduping operations and does not emit
@@ -34,7 +25,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slf4j
 public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(NoOpTyperDeduperWithV1V2Migrations.class);
 
   private final DestinationV1V2Migrator v1V2Migrator;
   private final V2TableMigrator v2TableMigrator;
@@ -59,39 +49,13 @@ public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
   }
 
   @Override
-  public void executeRawTableMigrations() throws Exception {
-    prepareSchemas(parsedCatalog);
-    final Set<CompletableFuture<Optional<Exception>>> prepareTablesTasks = new HashSet<>();
-    for (final StreamConfig stream : parsedCatalog.streams()) {
-      prepareTablesTasks.add(CompletableFuture.supplyAsync(() -> {
-        try {
-          // Migrate the Raw Tables if this is the first v2 sync after a v1 sync
-          v1V2Migrator.migrateIfNecessary(sqlGenerator, destinationHandler, stream);
-          v2TableMigrator.migrateIfNecessary(stream);
-          return Optional.empty();
-        } catch (final Exception e) {
-          LOGGER.error("Exception occurred while preparing tables for stream " + stream.id().originalName(), e);
-          return Optional.of(e);
-        }
-      }));
-    }
-    CompletableFuture.allOf(prepareTablesTasks.toArray(CompletableFuture[]::new)).join();
-    reduceExceptions(prepareTablesTasks, "The following exceptions were thrown attempting to prepare tables:\n");
-  }
-
-  private void prepareSchemas(final ParsedCatalog parsedCatalog) throws Exception {
-    final var rawSchema = parsedCatalog.streams().stream().map(stream -> stream.id().rawNamespace());
-    final var finalSchema = parsedCatalog.streams().stream().map(stream -> stream.id().finalNamespace());
-    final var createAllSchemasSql = Streams.concat(rawSchema, finalSchema)
-        .filter(Objects::nonNull)
-        .distinct()
-        .map(sqlGenerator::createSchema)
-        .toList();
-    destinationHandler.execute(Sql.concat(createAllSchemasSql));
+  public void executeRawTableMigrations() {
+    DV2MigrationUtil.executeRawTableMigrations(sqlGenerator, destinationHandler, parsedCatalog, v1V2Migrator, v2TableMigrator);
   }
 
   @Override
-  public void prepareFinalTables() throws Exception {
+  public void prepareFinalTables() {
+    log.info("Skipping prepareFinalTables");
   }
 
   @Override
