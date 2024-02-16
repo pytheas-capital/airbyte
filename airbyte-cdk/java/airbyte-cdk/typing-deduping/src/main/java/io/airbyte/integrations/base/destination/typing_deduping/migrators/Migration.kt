@@ -19,7 +19,7 @@ import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
  * OOMKill). Therefore, if the state blob indicates that a migration is necessary, migrations must still
  * confirm against the database that the migration is necessary.
  */
-interface Migration<State> {
+interface Migration<DestinationState> {
 
     /**
      * Perform the migration if it's necessary. This typically looks like:
@@ -33,7 +33,7 @@ interface Migration<State> {
      * }
      * ```
      */
-    fun migrateIfNecessary(state: State, stream: StreamConfig): MigrationResult<State>
+    fun migrateIfNecessary(state: DestinationState, stream: StreamConfig): MigrationResult<DestinationState>
 
     data class MigrationResult<State>(val updatedState: State, val softReset: Boolean) {
         companion object {
