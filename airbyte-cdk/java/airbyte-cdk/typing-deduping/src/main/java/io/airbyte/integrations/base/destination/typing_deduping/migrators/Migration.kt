@@ -40,9 +40,7 @@ interface Migration<DestinationState> {
             /**
              * If a migration detects no need to migrate, it should return this.
              */
-            fun <State> noop(state: State): MigrationResult<State> {
-                return MigrationResult(state, false)
-            }
+            fun <State> noop(state: State): MigrationResult<State> = MigrationResult(state, false)
         }
     }
 }
