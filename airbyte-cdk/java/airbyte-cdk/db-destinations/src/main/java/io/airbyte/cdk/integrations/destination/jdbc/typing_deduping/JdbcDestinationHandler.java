@@ -56,8 +56,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Condition;
+import org.jooq.DSLContext;
 import org.jooq.InsertValuesStep3;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
@@ -76,13 +78,20 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
   protected final String databaseName;
   protected final JdbcDatabase jdbcDatabase;
   protected final String rawTableSchemaName;
+  private final SQLDialect dialect;
 
   public JdbcDestinationHandler(final String databaseName,
                                 final JdbcDatabase jdbcDatabase,
-                                final String rawTableSchemaName) {
+                                final String rawTableSchemaName,
+                                final SQLDialect dialect) {
     this.databaseName = databaseName;
     this.jdbcDatabase = jdbcDatabase;
     this.rawTableSchemaName = rawTableSchemaName;
+    this.dialect = dialect;
+  }
+
+  protected DSLContext getDslContext() {
+    return DSL.using(dialect);
   }
 
   private Optional<TableDefinition> findExistingTable(final StreamId id) throws Exception {
@@ -91,7 +100,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
 
   private boolean isFinalTableEmpty(final StreamId id) throws Exception {
     return !jdbcDatabase.queryBoolean(
-        select(
+        getDslContext().select(
             field(exists(
                 selectOne()
                     .from(name(id.finalNamespace(), id.finalName()))
@@ -120,7 +129,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
     // but it's also the only method in the JdbcDatabase interface to return non-string/int types
     try (final Stream<Timestamp> timestampStream = jdbcDatabase.unsafeQuery(
         conn -> conn.prepareStatement(
-            select(field("MIN(_airbyte_extracted_at)").as("min_timestamp"))
+            getDslContext().select(field("MIN(_airbyte_extracted_at)").as("min_timestamp"))
                 .from(name(id.rawNamespace(), id.rawName()))
                 .where(DSL.condition("_airbyte_loaded_at IS NULL"))
                 .getSQL()),
@@ -139,7 +148,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
     // This second query just finds the newest raw record.
     try (final Stream<Timestamp> timestampStream = jdbcDatabase.unsafeQuery(
         conn -> conn.prepareStatement(
-            select(field("MAX(_airbyte_extracted_at)").as("min_timestamp"))
+            getDslContext().select(field("MAX(_airbyte_extracted_at)").as("min_timestamp"))
                 .from(name(id.rawNamespace(), id.rawName()))
                 .getSQL()),
         record -> record.getTimestamp("min_timestamp"))) {
@@ -176,7 +185,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
       try {
         // Guarantee the table exists.
         jdbcDatabase.execute(
-            createTableIfNotExists(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME))
+            getDslContext().createTableIfNotExists(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME))
                 .column(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME), SQLDataType.VARCHAR)
                 .column(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE), SQLDataType.VARCHAR)
                 // Just use a string type, even if the destination has a json type.
@@ -186,7 +195,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
         );
         // Fetch all records from it. We _could_ filter down to just our streams... but meh. This is small data.
         return jdbcDatabase.queryJsons(
-            select(asterisk())
+            getDslContext().select(asterisk())
                 .from(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME))
                 .getSQL()
         ).stream().collect(toMap(
@@ -309,12 +318,12 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
           field(DESTINATION_STATE_TABLE_COLUMN_NAME).eq(streamId.originalName())
               .and(field(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE).eq(streamId.originalNamespace())));
     }
-    String deleteStates = deleteFrom(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
+    String deleteStates = getDslContext().deleteFrom(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
         .where(deleteCondition)
         .getSQL(ParamType.INLINED);
 
     // Reinsert all of our states
-    InsertValuesStep3<Record, String, String, String> insertStatesStep = insertInto(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
+    InsertValuesStep3<Record, String, String, String> insertStatesStep = getDslContext().insertInto(table(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME)))
         .columns(
             field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME), String.class),
             field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE), String.class),
