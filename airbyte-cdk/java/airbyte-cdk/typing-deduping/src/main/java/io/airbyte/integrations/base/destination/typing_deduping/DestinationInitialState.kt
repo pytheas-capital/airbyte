@@ -6,8 +6,8 @@ package io.airbyte.integrations.base.destination.typing_deduping
 import java.util.*
 
 @JvmRecord
-data class DestinationInitialState<TableDefinition, DestinationState>(val streamConfig: StreamConfig,
-                                                                      val finalTableDefinition: Optional<TableDefinition>,
+data class DestinationInitialState<DestinationState>(val streamConfig: StreamConfig,
+                                                                      val isFinalTablePresent: Boolean,
                                                                       val initialRawTableState: InitialRawTableState,
                                                                       val isSchemaMismatch: Boolean,
                                                                       val isFinalTableEmpty: Boolean,

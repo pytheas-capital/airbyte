@@ -42,6 +42,7 @@ import io.airbyte.protocol.models.v0.AirbyteMessage;
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractJdbcDestination extends JdbcConnector implements Destination {
+public abstract class AbstractJdbcDestination<DestinationState> extends JdbcConnector implements Destination {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJdbcDestination.class);
 
@@ -249,7 +250,7 @@ public abstract class AbstractJdbcDestination extends JdbcConnector implements D
 
   protected abstract JdbcSqlGenerator getSqlGenerator();
 
-  protected abstract JdbcDestinationHandler getDestinationHandler(final String databaseName, final JdbcDatabase database);
+  protected abstract JdbcDestinationHandler<DestinationState> getDestinationHandler(final String databaseName, final JdbcDatabase database);
 
   /**
    * "database" key at root of the config json, for any other variants in config, override this
@@ -293,7 +294,7 @@ public abstract class AbstractJdbcDestination extends JdbcConnector implements D
       final String databaseName = getDatabaseName(config);
       final var migrator = new JdbcV1V2Migrator(namingResolver, database, databaseName);
       final NoopV2TableMigrator v2TableMigrator = new NoopV2TableMigrator();
-      final DestinationHandler destinationHandler = getDestinationHandler(databaseName, database);
+      final DestinationHandler<DestinationState> destinationHandler = getDestinationHandler(databaseName, database);
       final boolean disableTypeDedupe = config.has(DISABLE_TYPE_DEDUPE) && config.get(DISABLE_TYPE_DEDUPE).asBoolean(false);
       final TyperDeduper typerDeduper;
       if (disableTypeDedupe) {
@@ -301,7 +302,7 @@ public abstract class AbstractJdbcDestination extends JdbcConnector implements D
             8);
       } else {
         typerDeduper =
-            new DefaultTyperDeduper<>(sqlGenerator, destinationHandler, parsedCatalog, migrator, v2TableMigrator, 8);
+            new DefaultTyperDeduper<>(sqlGenerator, destinationHandler, parsedCatalog, migrator, v2TableMigrator, Collections.emptyList(), 8);
       }
       return JdbcBufferedConsumerFactory.createAsync(
           outputRecordCollector,

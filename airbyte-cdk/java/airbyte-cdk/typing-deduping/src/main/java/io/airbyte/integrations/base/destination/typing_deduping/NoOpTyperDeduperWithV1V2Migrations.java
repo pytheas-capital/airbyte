@@ -31,10 +31,10 @@ public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
   private final ExecutorService executorService;
   private final ParsedCatalog parsedCatalog;
   private final SqlGenerator sqlGenerator;
-  private final DestinationHandler destinationHandler;
+  private final DestinationHandler<?> destinationHandler;
 
   public NoOpTyperDeduperWithV1V2Migrations(final SqlGenerator sqlGenerator,
-                                            final DestinationHandler destinationHandler,
+                                            final DestinationHandler<?> destinationHandler,
                                             final ParsedCatalog parsedCatalog,
                                             final DestinationV1V2Migrator v1V2Migrator,
                                             final V2TableMigrator v2TableMigrator,

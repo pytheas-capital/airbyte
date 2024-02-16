@@ -34,7 +34,6 @@ import io.airbyte.integrations.base.destination.typing_deduping.AirbyteProtocolT
 import io.airbyte.integrations.base.destination.typing_deduping.AirbyteType;
 import io.airbyte.integrations.base.destination.typing_deduping.DestinationHandler;
 import io.airbyte.integrations.base.destination.typing_deduping.DestinationInitialState;
-import io.airbyte.integrations.base.destination.typing_deduping.DestinationInitialStateImpl;
 import io.airbyte.integrations.base.destination.typing_deduping.InitialRawTableState;
 import io.airbyte.integrations.base.destination.typing_deduping.Sql;
 import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig;
@@ -221,7 +220,7 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
         }
         final InitialRawTableState initialRawTableState = getInitialRawTableState(streamConfig.id());
         DestinationState destinationState = destinationStates.getOrDefault(streamConfig.id().asPair(), toDestinationState(Jsons.emptyObject()));
-        return new DestinationInitialStateImpl<>(streamConfig, finalTableDefinition.isPresent(), initialRawTableState,
+        return new DestinationInitialState<>(streamConfig, finalTableDefinition.isPresent(), initialRawTableState,
             isSchemaMismatch, isFinalTableEmpty, destinationState);
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -301,11 +300,11 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
   }
 
   @Override
-  public void commitDestinationStates(final List<DestinationInitialState<TableDefinition, DestinationState>> destinationStates) throws Exception {
+  public void commitDestinationStates(final Map<StreamId, DestinationState> destinationStates) throws Exception {
     // Delete all state records where the stream name+namespace match one of our states
     Condition deleteCondition = DSL.trueCondition();
-    for (DestinationInitialState<TableDefinition, DestinationState> destinationState : destinationStates) {
-      final StreamId streamId = destinationState.streamConfig().id();
+    for (Map.Entry<StreamId, DestinationState> destinationState : destinationStates.entrySet()) {
+      final StreamId streamId = destinationState.getKey();
       deleteCondition = deleteCondition.or(
           field(DESTINATION_STATE_TABLE_COLUMN_NAME).eq(streamId.originalName())
               .and(field(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE).eq(streamId.originalNamespace())));
@@ -320,9 +319,9 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
             field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME), String.class),
             field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAMESPACE), String.class),
             field(quotedName(DESTINATION_STATE_TABLE_COLUMN_STATE), String.class));
-    for (DestinationInitialState<TableDefinition, DestinationState> destinationState : destinationStates) {
-      final StreamId streamId = destinationState.streamConfig().id();
-      final String stateJson = Jsons.serialize(destinationState.destinationState());
+    for (Map.Entry<StreamId, DestinationState> destinationState : destinationStates.entrySet()) {
+      final StreamId streamId = destinationState.getKey();
+      final String stateJson = Jsons.serialize(destinationState.getValue());
       insertStatesStep = insertStatesStep.values(streamId.originalName(), streamId.originalNamespace(), stateJson);
     }
     String insertStates = insertStatesStep.getSQL(ParamType.INLINED);

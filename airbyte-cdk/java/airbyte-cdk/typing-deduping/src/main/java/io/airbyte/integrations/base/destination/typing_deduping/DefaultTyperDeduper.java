@@ -13,6 +13,7 @@ import static java.util.Collections.singleton;
 import io.airbyte.cdk.integrations.destination.StreamSyncSummary;
 import io.airbyte.commons.concurrency.CompletableFutures;
 import io.airbyte.commons.functional.Either;
+import io.airbyte.integrations.base.destination.typing_deduping.migrators.Migration;
 import io.airbyte.protocol.models.v0.DestinationSyncMode;
 import io.airbyte.protocol.models.v0.StreamDescriptor;
 import java.util.HashSet;
@@ -61,6 +62,7 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
 
   private final DestinationV1V2Migrator v1V2Migrator;
   private final V2TableMigrator v2TableMigrator;
+  private final List<Migration<DestinationState>> migrations;
   private final ParsedCatalog parsedCatalog;
   private Set<StreamId> overwriteStreamsWithTmpTable;
   private final Set<Pair<String, String>> streamsWithSuccessfulSetup;
@@ -83,12 +85,14 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
                              final ParsedCatalog parsedCatalog,
                              final DestinationV1V2Migrator v1V2Migrator,
                              final V2TableMigrator v2TableMigrator,
+                             final List<Migration<DestinationState>> migrations,
                              final int defaultThreadCount) {
     this.sqlGenerator = sqlGenerator;
     this.destinationHandler = destinationHandler;
     this.parsedCatalog = parsedCatalog;
     this.v1V2Migrator = v1V2Migrator;
     this.v2TableMigrator = v2TableMigrator;
+    this.migrations = migrations;
     this.initialRawTableStateByStream = new ConcurrentHashMap<>();
     this.streamsWithSuccessfulSetup = ConcurrentHashMap.newKeySet(parsedCatalog.streams().size());
     this.tdLocks = new ConcurrentHashMap<>();
@@ -98,12 +102,13 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
   }
 
   public DefaultTyperDeduper(
-                             final SqlGenerator sqlGenerator,
-                             final DestinationHandler<DestinationState> destinationHandler,
-                             final ParsedCatalog parsedCatalog,
-                             final DestinationV1V2Migrator v1V2Migrator,
-                             final int defaultThreadCount) {
-    this(sqlGenerator, destinationHandler, parsedCatalog, v1V2Migrator, new NoopV2TableMigrator(), defaultThreadCount);
+      final SqlGenerator sqlGenerator,
+      final DestinationHandler<DestinationState> destinationHandler,
+      final ParsedCatalog parsedCatalog,
+      final DestinationV1V2Migrator v1V2Migrator,
+      final int defaultThreadCount,
+      final List<Migration<DestinationState>> migrations) {
+    this(sqlGenerator, destinationHandler, parsedCatalog, v1V2Migrator, new NoopV2TableMigrator(), migrations, defaultThreadCount);
   }
 
   @Override

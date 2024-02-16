@@ -5,6 +5,7 @@
 package io.airbyte.integrations.base.destination.typing_deduping;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DestinationHandler<DestinationState> {
 
@@ -12,6 +13,7 @@ public interface DestinationHandler<DestinationState> {
 
   List<DestinationInitialState<DestinationState>> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception;
 
-  void commitDestinationStates(final List<DestinationInitialState<DestinationState>> destinationStates) throws Exception;
+  void commitDestinationStates(final Map<StreamId, DestinationState> destinationStates) throws Exception;
+
 
 }

@@ -22,26 +22,26 @@ import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
 interface Migration<DestinationState> {
 
     /**
-     * Perform the migration if it's necessary. This typically looks like:
-     * ```
-     * // Check the state blob
-     * if (requireMigration(state)) {
-     *   // Check the database, in case a previous migration ran, but failed to update the state
-     *   if (requireMigration(database)) {
-     *     migrate();
-     *   }
-     * }
-     * ```
+     * Check if a migration is necessary according to the state blob. Implementations SHOULD NOT
+     * perform IO in this method.
      */
-    fun migrateIfNecessary(state: DestinationState, stream: StreamConfig): MigrationResult<DestinationState>
+    fun requireMigration(state: DestinationState): Boolean
 
-    data class MigrationResult<State>(val updatedState: State, val softReset: Boolean) {
+    /**
+     * Perform the migration if it's necessary. This method will only be called if a previous call to
+     * [requireMigration] returned true. Implementations of this method MUST check against the database
+     * to confirm the the migration is still necessary, in case a previous migration ran, but failed
+     * to update the state.
+     */
+    fun migrateIfNecessary(stream: StreamConfig): MigrationResult<DestinationState>
+
+    data class MigrationResult<DestinationState>(val updatedDestinationState: DestinationState, val softReset: Boolean) {
         companion object {
             /**
              * If a migration detects no need to migrate, it should return this.
              */
-            fun <State> noop(updatedState: State): MigrationResult<State> {
-                return MigrationResult(updatedState, false)
+            fun <State> noop(state: State): MigrationResult<State> {
+                return MigrationResult(state, false)
             }
         }
     }
