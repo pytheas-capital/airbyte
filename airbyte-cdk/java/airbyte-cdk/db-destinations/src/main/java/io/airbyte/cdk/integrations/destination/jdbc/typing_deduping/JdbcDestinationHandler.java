@@ -184,6 +184,9 @@ public abstract class JdbcDestinationHandler<DestinationState> implements Destin
     CompletableFuture<Map<AirbyteStreamNameNamespacePair, DestinationState>> destinationStatesFuture = CompletableFuture.supplyAsync(() -> {
       try {
         // Guarantee the table exists.
+        // TODO where do we currently execute this create schema statement?
+        // This might be redundant.
+        jdbcDatabase.execute(getDslContext().createSchemaIfNotExists(quotedName(rawTableSchemaName)).getSQL(ParamType.INLINED));
         jdbcDatabase.execute(
             getDslContext().createTableIfNotExists(quotedName(rawTableSchemaName, DESTINATION_STATE_TABLE_NAME))
                 .column(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME), SQLDataType.VARCHAR)

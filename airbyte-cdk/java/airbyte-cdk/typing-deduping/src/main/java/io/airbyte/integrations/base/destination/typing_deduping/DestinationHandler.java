@@ -11,6 +11,10 @@ public interface DestinationHandler<DestinationState> {
 
   void execute(final Sql sql) throws Exception;
 
+  /**
+   * Fetch the current state of the destination for the given streams. This method MUST create the
+   * airbyte_internal.state table if it does not exist.
+   */
   List<DestinationInitialState<DestinationState>> gatherInitialState(List<StreamConfig> streamConfigs) throws Exception;
 
   void commitDestinationStates(final Map<StreamId, DestinationState> destinationStates) throws Exception;
