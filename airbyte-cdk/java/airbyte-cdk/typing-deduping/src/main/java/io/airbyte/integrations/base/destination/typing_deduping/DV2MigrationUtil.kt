@@ -12,7 +12,7 @@ class DV2MigrationUtil {
 
     @JvmStatic
     fun <DialectTableDefinition> executeRawTableMigrations(
-        sqlGenerator: SqlGenerator<DialectTableDefinition>,
+        sqlGenerator: SqlGenerator,
         destinationHandler: DestinationHandler<DialectTableDefinition>,
         parsedCatalog: ParsedCatalog,
         v1V2Migrator: DestinationV1V2Migrator<DialectTableDefinition>,
@@ -41,7 +41,7 @@ class DV2MigrationUtil {
     }
 
     private fun <DialectTableDefinition> prepareSchemas(
-        sqlGenerator: SqlGenerator<DialectTableDefinition>,
+        sqlGenerator: SqlGenerator,
         destinationHandler: DestinationHandler<DialectTableDefinition>,
         parsedCatalog: ParsedCatalog) {
       val rawSchema = parsedCatalog.streams.stream().map { stream: StreamConfig -> stream.id.rawNamespace }
