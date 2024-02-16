@@ -28,7 +28,7 @@ interface Migration<DestinationState> {
     fun requireMigration(state: DestinationState): Boolean
 
     /**
-     * Perform the migration if it's necessary. This method will only be called if a previous call to
+     * Perform the migration if it's necessary. Implementations may assume that a previous call to
      * [requireMigration] returned true. Implementations of this method MUST check against the database
      * to confirm the the migration is still necessary, in case a previous migration ran, but failed
      * to update the state.
