@@ -94,7 +94,7 @@ public class DefaultTyperDeduperTest {
     initialStates.forEach(initialState -> when(initialState.isFinalTablePresent()).thenReturn(false));
     // when(destinationHandler.findExistingTable(any())).thenReturn(Optional.empty());
 
-    typerDeduper.prepareTables();
+    typerDeduper.prepareFinalTables();
     verify(destinationHandler).execute(separately("CREATE SCHEMA overwrite_ns", "CREATE SCHEMA append_ns", "CREATE SCHEMA dedup_ns"));
     verify(destinationHandler).execute(Sql.of("CREATE TABLE overwrite_ns.overwrite_stream"));
     verify(destinationHandler).execute(Sql.of("CREATE TABLE append_ns.append_stream"));
@@ -126,7 +126,8 @@ public class DefaultTyperDeduperTest {
       when(initialState.isFinalTableEmpty()).thenReturn(true);
       when(initialState.isSchemaMismatch()).thenReturn(true);
     });
-    typerDeduper.prepareTables();
+
+    typerDeduper.prepareFinalTables();
     verify(destinationHandler).execute(separately("CREATE SCHEMA overwrite_ns", "CREATE SCHEMA append_ns", "CREATE SCHEMA dedup_ns"));
     verify(destinationHandler).execute(Sql.of("CREATE TABLE overwrite_ns.overwrite_stream_airbyte_tmp"));
     verify(destinationHandler).execute(Sql.of("PREPARE append_ns.append_stream FOR SOFT RESET"));
@@ -164,7 +165,7 @@ public class DefaultTyperDeduperTest {
       when(initialState.isSchemaMismatch()).thenReturn(true);
     });
 
-    typerDeduper.prepareTables();
+    typerDeduper.prepareFinalTables();
     verify(destinationHandler).execute(separately("CREATE SCHEMA overwrite_ns", "CREATE SCHEMA append_ns", "CREATE SCHEMA dedup_ns"));
     clearInvocations(destinationHandler);
     verify(destinationHandler, never()).execute(any());
@@ -183,7 +184,7 @@ public class DefaultTyperDeduperTest {
       when(initialState.initialRawTableState()).thenReturn(new InitialRawTableState(true, Optional.of(Instant.parse("2023-01-01T12:34:56Z"))));
     });
 
-    typerDeduper.prepareTables();
+    typerDeduper.prepareFinalTables();
     verify(destinationHandler).execute(separately("CREATE SCHEMA overwrite_ns", "CREATE SCHEMA append_ns", "CREATE SCHEMA dedup_ns"));
     // NB: We only create a tmp table for the overwrite stream, and do _not_ soft reset the existing
     // overwrite stream's table.
@@ -228,7 +229,7 @@ public class DefaultTyperDeduperTest {
       when(initialState.initialRawTableState()).thenReturn(new InitialRawTableState(true, Optional.of(Instant.now())));
     });
 
-    typerDeduper.prepareTables();
+    typerDeduper.prepareFinalTables();
     // NB: We only create one tmp table here.
     // Also, we need to alter the existing _real_ table, not the tmp table!
     verify(destinationHandler).execute(separately("CREATE SCHEMA overwrite_ns", "CREATE SCHEMA append_ns", "CREATE SCHEMA dedup_ns"));
@@ -247,7 +248,7 @@ public class DefaultTyperDeduperTest {
   void failedSetup() throws Exception {
     doThrow(new RuntimeException("foo")).when(destinationHandler).execute(any());
 
-    assertThrows(Exception.class, () -> typerDeduper.prepareTables());
+    assertThrows(Exception.class, () -> typerDeduper.prepareFinalTables());
     clearInvocations(destinationHandler);
 
     typerDeduper.typeAndDedupe("dedup_ns", "dedup_stream", false);
@@ -263,7 +264,8 @@ public class DefaultTyperDeduperTest {
   @Test
   void noUnprocessedRecords() throws Exception {
     initialStates.forEach(initialState -> when(initialState.initialRawTableState()).thenReturn(new InitialRawTableState(false, Optional.empty())));
-    typerDeduper.prepareTables();
+
+    typerDeduper.prepareFinalTables();
     clearInvocations(destinationHandler);
 
     typerDeduper.typeAndDedupe(Map.of(
@@ -286,7 +288,8 @@ public class DefaultTyperDeduperTest {
   void unprocessedRecords() throws Exception {
     initialStates.forEach(initialState -> when(initialState.initialRawTableState())
         .thenReturn(new InitialRawTableState(true, Optional.of(Instant.parse("2023-01-23T12:34:56Z")))));
-    typerDeduper.prepareTables();
+
+    typerDeduper.prepareFinalTables();
     clearInvocations(destinationHandler);
 
     typerDeduper.typeAndDedupe(Map.of(

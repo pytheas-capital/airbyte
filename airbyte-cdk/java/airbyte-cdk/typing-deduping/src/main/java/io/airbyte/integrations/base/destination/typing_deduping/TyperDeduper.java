@@ -12,12 +12,28 @@ import java.util.concurrent.locks.Lock;
 public interface TyperDeduper {
 
   /**
+   * Execute any raw table migrations. For example: Upgrading v1 raw tables to v2, adding a column
+   * to the raw tables, etc.
+   * <p>
+   * This method should be called BEFORE creating raw tables, because it may create the raw tables
+   * itself.
+   * <p>
+   * This method may affect the behavior of {@link #prepareFinalTables()}. For example, modifying a
+   * raw table may require us to run a soft reset. However, we should defer that soft reset until
+   * {@link #prepareFinalTables()}.
+   */
+  void executeRawTableMigrations() throws Exception;
+
+  /**
    * Create the tables that T+D will write to during the sync. In OVERWRITE mode, these might not be
    * the true final tables. Specifically, other than an initial sync (i.e. table does not exist, or is
    * empty) we write to a temporary final table, and swap it into the true final table at the end of
    * the sync. This is to prevent user downtime during a sync.
+   * <p>
+   * This method should be called AFTER creating the raw tables, because it may run a soft reset
+   * (which requires the raw tables to exist).
    */
-  void prepareTables() throws Exception;
+  void prepareFinalTables() throws Exception;
 
   /**
    * Suggest that we execute typing and deduping for a single stream (i.e. fetch new raw records into

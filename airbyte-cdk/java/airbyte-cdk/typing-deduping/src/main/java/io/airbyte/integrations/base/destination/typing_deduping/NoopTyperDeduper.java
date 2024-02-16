@@ -14,7 +14,7 @@ import java.util.concurrent.locks.Lock;
 public class NoopTyperDeduper implements TyperDeduper {
 
   @Override
-  public void prepareTables() {
+  public void prepareFinalTables() {
 
   }
 

@@ -24,6 +24,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is a NoOp implementation which skips and Typing and Deduping operations and does not emit
@@ -32,6 +34,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
  */
 @Slf4j
 public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(NoOpTyperDeduperWithV1V2Migrations.class);
 
   private final DestinationV1V2Migrator v1V2Migrator;
   private final V2TableMigrator v2TableMigrator;
@@ -55,6 +58,27 @@ public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
         new BasicThreadFactory.Builder().namingPattern(TYPE_AND_DEDUPE_THREAD_NAME).build());
   }
 
+  @Override
+  public void executeRawTableMigrations() throws Exception {
+    prepareSchemas(parsedCatalog);
+    final Set<CompletableFuture<Optional<Exception>>> prepareTablesTasks = new HashSet<>();
+    for (final StreamConfig stream : parsedCatalog.streams()) {
+      prepareTablesTasks.add(CompletableFuture.supplyAsync(() -> {
+        try {
+          // Migrate the Raw Tables if this is the first v2 sync after a v1 sync
+          v1V2Migrator.migrateIfNecessary(sqlGenerator, destinationHandler, stream);
+          v2TableMigrator.migrateIfNecessary(stream);
+          return Optional.empty();
+        } catch (final Exception e) {
+          LOGGER.error("Exception occurred while preparing tables for stream " + stream.id().originalName(), e);
+          return Optional.of(e);
+        }
+      }));
+    }
+    CompletableFuture.allOf(prepareTablesTasks.toArray(CompletableFuture[]::new)).join();
+    reduceExceptions(prepareTablesTasks, "The following exceptions were thrown attempting to prepare tables:\n");
+  }
+
   private void prepareSchemas(final ParsedCatalog parsedCatalog) throws Exception {
     final var rawSchema = parsedCatalog.streams().stream().map(stream -> stream.id().rawNamespace());
     final var finalSchema = parsedCatalog.streams().stream().map(stream -> stream.id().finalNamespace());
@@ -67,26 +91,7 @@ public class NoOpTyperDeduperWithV1V2Migrations implements TyperDeduper {
   }
 
   @Override
-  public void prepareTables() throws Exception {
-    log.info("ensuring schemas exist for prepareTables with V1V2 migrations");
-    prepareSchemas(parsedCatalog);
-    final Set<CompletableFuture<Optional<Exception>>> prepareTablesTasks = new HashSet<>();
-    for (final StreamConfig stream : parsedCatalog.streams()) {
-      prepareTablesTasks.add(CompletableFuture.supplyAsync(() -> {
-        // Migrate the Raw Tables if this is the first v2 sync after a v1 sync
-        try {
-          log.info("Migrating V1->V2 for stream {}", stream.id());
-          v1V2Migrator.migrateIfNecessary(sqlGenerator, destinationHandler, stream);
-          log.info("Migrating V2 legacy for stream {}", stream.id());
-          v2TableMigrator.migrateIfNecessary(stream);
-          return Optional.empty();
-        } catch (final Exception e) {
-          return Optional.of(e);
-        }
-      }, executorService));
-    }
-    CompletableFuture.allOf(prepareTablesTasks.toArray(CompletableFuture[]::new)).join();
-    reduceExceptions(prepareTablesTasks, "The following exceptions were thrown attempting to prepare tables:\n");
+  public void prepareFinalTables() throws Exception {
   }
 
   @Override

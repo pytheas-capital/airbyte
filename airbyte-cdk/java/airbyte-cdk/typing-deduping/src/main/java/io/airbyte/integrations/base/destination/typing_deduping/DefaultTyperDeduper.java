@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * In a typical sync, destinations should call the methods:
  * <ol>
- * <li>{@link #prepareTables()} once at the start of the sync</li>
+ * <li>{@link #prepareFinalTables()} once at the start of the sync</li>
  * <li>{@link #typeAndDedupe(String, String, boolean)} as needed throughout the sync</li>
  * <li>{@link #commitFinalTables()} once at the end of the sync</li>
  * </ol>
@@ -120,15 +120,33 @@ public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper
   }
 
   @Override
-  public void prepareTables() throws Exception {
+  public void executeRawTableMigrations() throws Exception {
+    prepareSchemas(parsedCatalog);
+    final Set<CompletableFuture<Optional<Exception>>> prepareTablesTasks = new HashSet<>();
+    for (final StreamConfig stream : parsedCatalog.streams()) {
+      prepareTablesTasks.add(CompletableFuture.supplyAsync(() -> {
+        try {
+          // Migrate the Raw Tables if this is the first v2 sync after a v1 sync
+          v1V2Migrator.migrateIfNecessary(sqlGenerator, destinationHandler, stream);
+          v2TableMigrator.migrateIfNecessary(stream);
+          return Optional.empty();
+        } catch (final Exception e) {
+          LOGGER.error("Exception occurred while preparing tables for stream " + stream.id().originalName(), e);
+          return Optional.of(e);
+        }
+      }));
+    }
+    CompletableFuture.allOf(prepareTablesTasks.toArray(CompletableFuture[]::new)).join();
+    reduceExceptions(prepareTablesTasks, "The following exceptions were thrown attempting to prepare tables:\n");
+  }
+
+  @Override
+  public void prepareFinalTables() throws Exception {
     if (overwriteStreamsWithTmpTable != null) {
       throw new IllegalStateException("Tables were already prepared.");
     }
     overwriteStreamsWithTmpTable = ConcurrentHashMap.newKeySet();
     LOGGER.info("Preparing tables");
-
-    // This is intentionally not done in parallel to avoid rate limits in some destinations.
-    prepareSchemas(parsedCatalog);
 
     final List<DestinationInitialState> initialStates = destinationHandler.gatherInitialState(parsedCatalog.streams());
     final List<Either<? extends Exception, Void>> prepareTablesFutureResult = CompletableFutures.allOf(
@@ -143,9 +161,6 @@ public class DefaultTyperDeduper<DialectTableDefinition> implements TyperDeduper
     return CompletableFuture.supplyAsync(() -> {
       final var stream = initialState.streamConfig();
       try {
-        // Migrate the Raw Tables if this is the first v2 sync after a v1 sync
-        v1V2Migrator.migrateIfNecessary(sqlGenerator, destinationHandler, initialState.streamConfig());
-        v2TableMigrator.migrateIfNecessary(initialState.streamConfig());
         if (initialState.isFinalTablePresent()) {
           LOGGER.info("Final Table exists for stream {}", stream.id().finalName());
           // The table already exists. Decide whether we're writing to it directly, or using a tmp table.
