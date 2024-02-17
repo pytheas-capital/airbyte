@@ -45,8 +45,11 @@ public class DefaultTyperDeduperTest {
     sqlGenerator = spy(new MockSqlGenerator());
     destinationHandler = mock(DestinationHandler.class);
     DestinationInitialState<String> overwriteNsState = mock(DestinationInitialState.class);
+    when(overwriteNsState.destinationState()).thenReturn("");
     DestinationInitialState<String> appendNsState = mock(DestinationInitialState.class);
-    DestinationInitialState<String> dedupeNsState = mock(DestinationInitialState.class);
+    when(appendNsState.destinationState()).thenReturn("");
+    DestinationInitialState<String>  dedupeNsState = mock(DestinationInitialState.class);
+    when(dedupeNsState.destinationState()).thenReturn("");
     StreamConfig overwriteStreamConfig = new StreamConfig(
         new StreamId("overwrite_ns", "overwrite_stream", null, null, "overwrite_ns", "overwrite_stream"),
         null,

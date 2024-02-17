@@ -154,15 +154,14 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
     // Also, for OVERWRITE streams, decide if we're writing directly to the final table, or into an
     // _airbyte_tmp table.
     return CompletableFuture.supplyAsync(() -> {
-      DestinationInitialState<DestinationState> currentState = initialState;
-      final var stream = currentState.streamConfig();
+      final var stream = initialState.streamConfig();
       try {
         boolean softReset = false;
         if (initialState.isFinalTablePresent()) {
           LOGGER.info("Final Table exists for stream {}", stream.id().finalName());
           // The table already exists. Decide whether we're writing to it directly, or using a tmp table.
           if (stream.destinationSyncMode() == DestinationSyncMode.OVERWRITE) {
-            if (!currentState.isFinalTableEmpty() || currentState.isSchemaMismatch()) {
+            if (!initialState.isFinalTableEmpty() || initialState.isSchemaMismatch()) {
               // We want to overwrite an existing table. Write into a tmp table. We'll overwrite the table at the
               // end of the sync.
               overwriteStreamsWithTmpTable.add(stream.id());
@@ -174,7 +173,7 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
                   stream.id().finalName());
             }
 
-          } else if (currentState.isSchemaMismatch()) {
+          } else if (initialState.isSchemaMismatch()) {
             // We're loading data directly into the existing table. Make sure it has the right schema.
             softReset = true;
           }
@@ -189,7 +188,7 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
           TypeAndDedupeTransaction.executeSoftReset(sqlGenerator, destinationHandler, stream);
         }
 
-        initialRawTableStateByStream.put(stream.id(), currentState.initialRawTableState());
+        initialRawTableStateByStream.put(stream.id(), initialState.initialRawTableState());
 
         streamsWithSuccessfulSetup.add(Pair.of(stream.id().originalNamespace(), stream.id().originalName()));
 
@@ -202,10 +201,10 @@ public class DefaultTyperDeduper<DestinationState> implements TyperDeduper {
         // immediately acquire the lock.
         internalTdLocks.put(stream.id(), new ReentrantLock());
 
-        return new TableSetupResult<>(stream.id(), currentState.destinationState(), Optional.empty());
+        return new TableSetupResult<>(stream.id(), initialState.destinationState(), Optional.empty());
       } catch (final Exception e) {
         LOGGER.error("Exception occurred while preparing tables for stream " + stream.id().originalName(), e);
-        return new TableSetupResult<>(stream.id(), currentState.destinationState(), Optional.of(e));
+        return new TableSetupResult<>(stream.id(), initialState.destinationState(), Optional.of(e));
       }
     }, this.executorService);
   }
