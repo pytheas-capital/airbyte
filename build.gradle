@@ -70,10 +70,10 @@ allprojects {
     test {
         useJUnitPlatform()
         testLogging() {
-            events 'skipped', 'started', 'passed', 'failed'
+            events 'skipped', 'passed', 'failed'
             exceptionFormat 'full'
             // Swallow the logs when running in airbyte-ci, rely on test reports instead.
-            showStandardStreams = !System.getenv().containsKey("RUN_IN_AIRBYTE_CI")
+            //showStandardStreams = !System.getenv().containsKey("RUN_IN_AIRBYTE_CI")
         }
         reports {
             junitXml {
