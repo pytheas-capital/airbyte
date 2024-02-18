@@ -77,6 +77,7 @@ public class MsSQLTestDatabase extends TestDatabase<MSSQLServerContainer<?>, MsS
       while (status == Status.INITIALIZING) {
         // Loop until running. This is a busy loop because I want to execute the query below ASAP
       }
+      LOGGER.info("SGX databaseId=" + databaseId + ". Database initialized " + getDatabaseName());
       Status myStatus = status;
       boolean wasRunning = false;
       try {
@@ -110,6 +111,7 @@ public class MsSQLTestDatabase extends TestDatabase<MSSQLServerContainer<?>, MsS
 
   public MsSQLTestDatabase(final MSSQLServerContainer<?> container) {
     super(container);
+    LOGGER.info("SGX creating new database. databaseId=" + this.databaseId + ", databaseName=" + getDatabaseName());
     new MssqlTestDatabaseBackgroundThread().start();
   }
 

@@ -209,8 +209,13 @@ abstract public class TestDatabase<C extends JdbcDatabaseContainer<?>, T extends
     try {
       for (String sql : sqls) {
         LOGGER.info(formatLogLine("executing SQL: " + sql));
-        getDslContext().execute(sql);
-        LOGGER.info(formatLogLine("completed SQL: " + sql));
+        try {
+          getDslContext().execute(sql);
+          LOGGER.info(formatLogLine("completed SQL: " + sql));
+        } catch (Throwable t) {
+          LOGGER.error(formatLogLine("error when executing SQL: " + sql + "e=\n" + t));
+          throw t;
+        }
       }
     } catch (DataAccessException e) {
       throw new RuntimeException(e);
