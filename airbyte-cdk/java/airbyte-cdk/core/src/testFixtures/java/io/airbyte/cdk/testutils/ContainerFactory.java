@@ -117,7 +117,9 @@ public abstract class ContainerFactory<C extends JdbcDatabaseContainer<?>> {
       }
       final var logConsumer = new Slf4jLogConsumer(LOGGER) {
         public void accept(OutputFrame frame) {
-          super.accept(frame);
+          if (frame.getUtf8StringWithoutLineEnding().trim().length() > 0) {
+            super.accept(frame);
+          }
         }
       };
       getTestContainerLogMdcBuilder(imageName, methodNames, containerId.getAndIncrement(), container.getContainerId()).produceMappings(logConsumer::withMdc);
