@@ -12,22 +12,24 @@ import io.airbyte.commons.resources.MoreResources;
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
 import io.airbyte.protocol.models.v0.ConnectorSpecification;
 import java.util.HashMap;
-import org.junit.jupiter.api.Disabled;
 
-@Disabled
 public class ScaffoldJavaJdbcSourceAcceptanceTest extends SourceAcceptanceTest {
 
-  private ScaffoldJavaJdbcTestDatabase testdb;
+  private JsonNode config;
 
   @Override
   protected void setupEnvironment(final TestDestinationEnv testEnv) {
-    // TODO: create new TestDatabase instance and assign `testdb` to it.
-    // TODO: use it to create and populate test tables in the database.
+    // TODO create new container. Ex: "new OracleContainer("epiclabs/docker-oracle-xe-11g");"
+    // TODO make container started. Ex: "container.start();"
+    // TODO init JsonNode config
+    // TODO crete airbyte Database object "Databases.createJdbcDatabase(...)"
+    // TODO insert test data to DB. Ex: "database.execute(connection-> ...)"
+    // TODO close Database. Ex: "database.close();"
   }
 
   @Override
   protected void tearDown(final TestDestinationEnv testEnv) {
-    testdb.close();
+    // TODO close container that was initialized in setup() method. Ex: "container.close();"
   }
 
   @Override
@@ -42,8 +44,7 @@ public class ScaffoldJavaJdbcSourceAcceptanceTest extends SourceAcceptanceTest {
 
   @Override
   protected JsonNode getConfig() {
-    // TODO: (optional) call more builder methods.
-    return testdb.integrationTestConfigBuilder().build();
+    return config;
   }
 
   @Override
