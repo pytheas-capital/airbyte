@@ -4,17 +4,14 @@ Now that you've generated the module, let's navigate to its directory and instal
 
 ```text
 cd ../../connectors/source-<name>
-python -m venv .venv # Create a virtual environment in the .venv directory
-source .venv/bin/activate # enable the venv
-pip install -r requirements.txt
+poetry install
 ```
 
-This step sets up the initial python environment. **All** subsequent `python` or `pip` commands assume you have activated your virtual environment.
 
 Let's verify everything is working as intended. Run:
 
 ```text
-python main.py spec
+poetry run source-<name> spec
 ```
 
 You should see some output:
@@ -49,10 +46,10 @@ You'll notice in your source's directory that there is a python file called `mai
 
 ```text
 # from airbyte-integrations/connectors/source-<name>
-python main.py spec
-python main.py check --config secrets/config.json
-python main.py discover --config secrets/config.json
-python main.py read --config secrets/config.json --catalog sample_files/configured_catalog.json
+poetry run source-<name> spec
+poetry run source-<name> check --config secrets/config.json
+poetry run source-<name> discover --config secrets/config.json
+poetry run source-<name> read --config secrets/config.json --catalog sample_files/configured_catalog.json
 ```
 
 The nice thing about this approach is that you can iterate completely within python. The downside is that you are not quite running your source as it will actually be run by Airbyte. Specifically, you're not running it from within the docker container that will house it.

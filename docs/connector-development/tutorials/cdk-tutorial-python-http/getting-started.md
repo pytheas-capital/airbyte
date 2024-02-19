@@ -7,6 +7,7 @@ This is a step-by-step guide for how to create an Airbyte source in Python to re
 ## Requirements
 
 * Python &gt;= 3.9
+* [Poetry](https://python-poetry.org/)
 * Docker
 * NodeJS \(only used to generate the connector\). We'll remove the NodeJS dependency soon.
 

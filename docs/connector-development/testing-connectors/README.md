@@ -15,8 +15,8 @@ Unit and integration tests can be run directly from the connector code.
 
 Using `pytest` for Python connectors:
 ```bash
-python -m pytest unit_tests/
-python -m pytest integration_tests/
+poetry run pytest tests/unit_tests/
+poetry run pytest tests/integration_tests/
 ```
 
 Using `gradle` for Java connectors:
