@@ -50,7 +50,7 @@ class MongoDbDebeziumPropertiesManagerTest {
 
   private static final String DATABASE_NAME = "test_database";
   private static final Path PATH = Path.of(".");
-  public static final String EXPECTED_CONNECTION_STRING = "mongodb://localhost:27017/?retryWrites=false&provider=airbyte&tls=true";
+  public static final String EXPECTED_CONNECTION_STRING = "mongodb://localhost:27017/?retryWrites=false&provider=airbyte";
 
   @Test
   void testDebeziumProperties() {
@@ -204,7 +204,7 @@ class MongoDbDebeziumPropertiesManagerTest {
     final JsonNode config = createConfiguration(Optional.of("username"), Optional.of("password"), Optional.of("admin"));
     final String connectionString = MongoDbDebeziumPropertiesManager.buildConnectionString(config, true);
     assertNotNull(connectionString);
-    assertEquals("mongodb://localhost:27017/?retryWrites=false&provider=airbyte&tls=true&readPreference=secondary", connectionString);
+    assertEquals("mongodb://localhost:27017/?retryWrites=false&provider=airbyte&readPreference=secondary", connectionString);
   }
 
   @Test

@@ -65,7 +65,7 @@ dependencies {
  *
  * To execute this task, use the following command:
  *
- * ./gradlew :airbyte-integrations:connectors:source-mongodb-v2:generateTestData -PconnectionString=<connection string> -PdatabaseName=<database name> -PcollectionName=<collection name> -Pusername=<username>
+ * ./gradlew :airbyte-integrations:connectors:source-mongodb-v2-nossl:generateTestData -PconnectionString=<connection string> -PdatabaseName=<database name> -PcollectionName=<collection name> -Pusername=<username>
  *
  * Optionally, you can provide -PnumberOfDocuments to change the number of generated documents from the default (10,000).
  */
@@ -99,7 +99,7 @@ tasks.register('generateTestData', JavaExec) {
  *
  * To execute this task, use the following command:
  *
- * ./gradlew :airbyte-integrations:connectors:source-mongodb-v2:debeziumTest -PconnectionString=<connection string> -PdatabaseName=<database name> -PcollectionName=<collection name> -Pusername=<username>
+ * ./gradlew :airbyte-integrations:connectors:source-mongodb-v2-nossl:debeziumTest -PconnectionString=<connection string> -PdatabaseName=<database name> -PcollectionName=<collection name> -Pusername=<username>
  */
 tasks.register('debeziumTest', JavaExec) {
     def arguments = []
